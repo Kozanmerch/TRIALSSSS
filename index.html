@@ -1382,7 +1382,16 @@ function downloadPDF(){
       pageNum++;
     }
 
-    pdf.save(kozanNo + '.pdf');
+    // Build a clean named download — avoids double-file issue on some browsers
+    const pdfBlob = pdf.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = kozanNo + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
 
     // Restore hidden state
     el.style.cssText = '';
