@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Kozan Textile · Sevk Fişi</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <style>
 :root {
   --bg:#0d0f14; --bg2:#161a22; --bg3:#1e2330; --surface:#242938;
@@ -1301,34 +1301,50 @@ function downloadPDF(){
   saveCurrent();
   buildPrint();
 
-  const r = state.current;
-  const kozanNo = (r && r.kozanOrderNo && r.kozanOrderNo.trim()) ? r.kozanOrderNo.trim() : 'sevk';
-
   const el = document.getElementById('print-area');
 
-  // Clone into a visible wrapper so html2canvas can render it properly
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:9999;';
-  wrapper.innerHTML = el.innerHTML;
-  document.body.appendChild(wrapper);
+  // Collect all <style> and <link rel="stylesheet"> from the current page
+  const styleContent = Array.from(document.querySelectorAll('style')).map(s => s.outerHTML).join('\n');
+  const linkContent  = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(l => l.outerHTML).join('\n');
 
-  const opt = {
-    margin:      [5, 5, 5, 5],   // mm  top right bottom left
-    filename:    kozanNo + '.pdf',
-    image:       { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale:       2,
-      useCORS:     true,
-      logging:     false,
-      width:       794,          // A4 at 96dpi
-      windowWidth: 794
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  // Build a standalone HTML document with the print content
+  const printDoc = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+${linkContent}
+${styleContent}
+<style>
+  /* Force print area visible and full-width */
+  html, body { margin:0; padding:0; background:#fff; }
+  #print-area { display: block !important; }
+  .app > *:not(#print-area) { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="print-area">${el.innerHTML}</div>
+</div>
+</body>
+</html>`;
+
+  // Open in a hidden iframe and trigger print
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:none;';
+  document.body.appendChild(iframe);
+
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(printDoc);
+  iframe.contentDocument.close();
+
+  // Wait for fonts/images to load, then print
+  iframe.onload = function() {
+    setTimeout(function() {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(function() { document.body.removeChild(iframe); }, 1000);
+    }, 500);
   };
-
-  html2pdf().set(opt).from(wrapper).save().then(function(){
-    document.body.removeChild(wrapper);
-  });
 }
 
 // ══ PRINT BUILD ════════════════════════════════════════════════════════
