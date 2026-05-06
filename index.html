@@ -1085,7 +1085,7 @@ function renderForm(){
       <button class="btn btn-ghost" onclick="showDashboard()">← Vazgeç</button>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost" onclick="saveCurrent()">💾 Kaydet</button>
-        <button class="btn btn-primary" onclick="downloadPDF()">📥 PDF İndir</button>
+        <button class="btn btn-ghost" onclick="downloadPDF()">📥 PDF İndir</button>
       </div>
     </div>
   `);
@@ -1306,13 +1306,11 @@ function downloadPDF(){
 
   const el = document.getElementById('print-area');
 
-  // Temporarily position off-screen so html2canvas can measure it
-  el.style.position   = 'fixed';
-  el.style.left       = '-9999px';
-  el.style.top        = '0';
-  el.style.width      = '210mm';
-  el.style.background = '#fff';
-  el.style.display    = 'block';
+  // Clone into a visible wrapper so html2canvas can render it properly
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:9999;';
+  wrapper.innerHTML = el.innerHTML;
+  document.body.appendChild(wrapper);
 
   const opt = {
     margin:      [5, 5, 5, 5],   // mm  top right bottom left
@@ -1328,14 +1326,8 @@ function downloadPDF(){
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(el).save().then(function(){
-    // Restore hidden state
-    el.style.position   = '';
-    el.style.left       = '';
-    el.style.top        = '';
-    el.style.width      = '';
-    el.style.background = '';
-    el.style.display    = 'none';
+  html2pdf().set(opt).from(wrapper).save().then(function(){
+    document.body.removeChild(wrapper);
   });
 }
 
