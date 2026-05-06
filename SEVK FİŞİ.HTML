@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Kozan Textile · Sevk Fişi</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --bg2:#161a22; --bg3:#1e2330; --surface:#242938;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+  --text:#f0f2f7; --muted:#8892a4; --accent:#ffffff; --accent2:#ffffff;
+  --pass:#22c55e; --pass-bg:rgba(34,197,94,0.12);
+  --fail:#ef4444; --fail-bg:rgba(239,68,68,0.12);
+  --warn:#f59e0b; --warn-bg:rgba(245,158,11,0.12);
+  --radius:10px; --r-sm:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{height:100%;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100%;font-size:14px;line-height:1.5;}
+.app{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-logo{display:flex;align-items:center;gap:10px;}
+.topbar-logo .icon{width:30px;height:30px;background:var(--accent2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;}
+.topbar-logo h1{font-size:15px;font-weight:600;letter-spacing:-0.02em;}
+.topbar-logo span{color:var(--muted);font-weight:400;font-size:13px;}
+.topbar-actions{display:flex;gap:8px;}
+.main{flex:1;padding:20px 16px 100px;max-width:900px;margin:0 auto;width:100%;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:var(--r-sm);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s;}
+.btn-primary{background:var(--accent2);color:#fff;} .btn-primary:hover{background:#2d5ab8;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2);} .btn-ghost:hover{background:var(--surface);color:var(--text);}
+.btn-danger{background:var(--fail-bg);color:var(--fail);border:1px solid rgba(239,68,68,0.2);} .btn-danger:hover{background:rgba(239,68,68,0.2);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px;}
+.card-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none;transition:border-color 0.15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent2);}
+.field textarea{resize:vertical;min-height:70px;}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892a4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.section-divider{display:flex;align-items:center;gap:10px;margin:10px 0 14px;}
+.section-divider .sd-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+/* BOX TABLE */
+.box-table-wrapper{overflow-x:auto;margin-bottom:8px;}
+.box-table{border-collapse:collapse;font-size:12px;}
+.box-table th{background:var(--surface);color:var(--muted);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:7px 5px;text-align:center;border:1px solid var(--border2);white-space:nowrap;}
+.box-table td{padding:0;border:1px solid var(--border);text-align:center;vertical-align:middle;}
+.box-table td input{width:100%;background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);text-align:center;padding:6px 3px;}
+.box-table td input:focus{background:rgba(58,111,212,0.08);}
+.box-table td input.auto-val{font-weight:600;color:var(--accent2);}
+.box-table td.row-num{padding:6px 5px;color:var(--muted);font-size:10px;font-family:'DM Mono',monospace;background:var(--bg3);min-width:24px;}
+.box-table tr.total-row td{background:var(--surface);}
+.box-table tr.total-row td input{font-weight:700;color:var(--accent2);}
+.box-table tr:not(.total-row):hover td:not(.row-num){background:rgba(255,255,255,0.02);}
+.add-row-btn{display:flex;align-items:center;gap:8px;padding:9px 12px;color:var(--muted);font-size:13px;cursor:pointer;border:1px dashed var(--border2);border-radius:var(--r-sm);background:transparent;width:100%;font-family:inherit;transition:all 0.15s;margin-top:4px;}
+.add-row-btn:hover{border-color:var(--accent2);color:var(--accent2);background:rgba(58,111,212,0.05);}
+/* SUMMARY TABLE */
+.summary-table{width:100%;border-collapse:collapse;font-size:12px;}
+.summary-table th{background:var(--surface);color:var(--muted);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:7px 6px;text-align:center;border:1px solid var(--border2);}
+.summary-table th.left-th{text-align:left;}
+.summary-table td{padding:6px 6px;border:1px solid var(--border);text-align:center;font-family:'DM Mono',monospace;font-size:12px;}
+.summary-table td.label-cell{text-align:left;font-family:'DM Sans',sans-serif;color:var(--muted);font-size:11px;font-weight:500;white-space:nowrap;}
+.summary-table td.total-cell{font-weight:700;color:var(--accent2);}
+.summary-table td.fark-cell{font-weight:600;}
+.summary-table input{background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);text-align:center;width:100%;padding:0;}
+.summary-table tr.siparis-row td{background:rgba(58,111,212,0.05);}
+.summary-table tr.kesim-row td{background:rgba(245,158,11,0.05);}
+.summary-table tr.yukleme-row td{background:rgba(34,197,94,0.05);}
+.summary-table tr.saglamUrun-row td{background:rgba(34,197,94,0.05);}
+.summary-table tr.kalanSaglamUrun-row td{background:rgba(34,197,94,0.08);}
+.summary-table tr.ikiKaliteSaglamUrun-row td{background:rgba(245,158,11,0.08);}
+.summary-table tr.fark-row td{background:rgba(239,68,68,0.04);}
+.summary-table tr.fark-pct-row td{background:rgba(239,68,68,0.08);}
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:10px 20px;font-size:13px;font-weight:500;z-index:999;animation:slideUp 0.2s ease;white-space:nowrap;pointer-events:none;}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(10px);}}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;justify-content:space-between;z-index:100;}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-width:460px;max-height:85vh;display:flex;flex-direction:column;}
+.modal-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h3{font-size:14px;font-weight:600;}
+.modal-body{padding:18px;overflow-y:auto;flex:1;}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.name-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--r-sm);background:var(--bg3);border:1px solid var(--border);margin-bottom:6px;}
+.name-item span{font-size:13px;}
+.del-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.del-btn:hover{background:var(--fail-bg);color:var(--fail);border-color:rgba(239,68,68,0.3);}
+.dash-header{margin-bottom:20px;}
+.dash-header h2{font-size:22px;font-weight:600;letter-spacing:-0.02em;}
+.dash-header p{color:var(--muted);font-size:14px;margin-top:4px;}
+.record-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s;}
+.record-card:hover{border-color:var(--border2);}
+.record-card .rc-left h3{font-size:14px;font-weight:500;margin-bottom:3px;}
+.record-card .rc-left p{font-size:12px;color:var(--muted);}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-state .es-icon{font-size:40px;margin-bottom:14px;opacity:0.4;}
+.empty-state h3{font-size:16px;color:var(--text);margin-bottom:6px;}
+.total-pill{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:3px 10px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2);white-space:nowrap;flex-shrink:0;}
+.mini-input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 10px;font-family:inherit;font-size:13px;color:var(--text);outline:none;transition:border-color 0.15s;}
+.mini-input:focus{border-color:var(--accent2);}
+
+/* ═══════════════════════════════ PRINT ═══════════════════════════ */
+@media print {
+
+  /* Reset */
+  html, body {
+    height: auto !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  body{
+    background:#fff;
+    color:#111;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+  }
+
+  /* Show only print area */
+  .app>*:not(#print-area){
+    display:none!important;
+  }
+
+  #print-area{
+    display:block!important;
+  }
+
+  .no-print{
+    display:none!important;
+  }
+
+  /* Page setup */
+  @page{
+    margin:5mm;              /* 🔥 reduced from 7mm */
+    size:A4 portrait;
+  }
+
+  /* Main container */
+  .pr{
+    padding-bottom:5px;      /* 🔥 reduced (prevents 2nd page) */
+    page-break-after:avoid;
+    page-break-inside:avoid;
+  }
+
+  /* Tables & sections should not split */
+  .pr-koli,
+  .pr-sum,
+  .pr-meta,
+  .pr-qty,
+  .pr-sig,
+  .pr-notes-wrap{
+    page-break-inside:avoid;
+  }
+
+  /* Footer FIX (no more forced new page) */
+  .pr-footer-wrap{
+    position:static;
+    margin-top:8px;
+    background:#fff;
+    padding:0 5mm 3mm;
+  }
+
+  /* Images */
+  img{
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+    max-width:100%;
+  }
+}
+
+/* Hide print area on screen */
+#print-area{
+  display:none;
+}
+
+/* Print typography */
+.pr{
+  font-family:'Arial',sans-serif;
+  font-size:9.5px;
+  color:#111;
+  background:#fff;
+}
+
+/* Print header */
+.pr-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px;padding-bottom:5px;border-bottom:2px solid #111;}
+.pr-logo-wrap{display:flex;align-items:center;gap:6px;}
+.pr-logo-wrap img{height:40px;width:auto;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.pr-logo-box-wrap{border:2px solid #111;padding:4px 8px;display:inline-flex;align-items:center;justify-content:center;}
+.pr-logo-big{font-size:20px;font-weight:900;letter-spacing:-0.5px;color:#111;font-family:'Arial',sans-serif;}
+.pr-textile{font-size:7px;letter-spacing:3px;color:#555;margin-top:1px;text-align:center;}
+.pr-right{text-align:right;}
+.pr-tarih{font-size:9px;color:#555;margin-top:2px;}
+
+/* Print meta table */
+.pr-meta{width:100%;border-collapse:collapse;margin-bottom:3px;}
+.pr-meta td{border:1px solid #999;padding:0px 4px;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word;white-space:normal;}
+.pr-meta .pm-label{font-size:7px;color:#777;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:1px;}
+.pr-meta .pm-val{font-size:9.5px;font-weight:700;}
+
+/* Print qty/error row */
+.pr-qty{width:100%;border-collapse:collapse;margin-bottom:3px;}
+.pr-qty td{border:1px solid #999;padding:2px 5px;text-align:center;vertical-align:top;}
+.pr-qty .pm-label{font-size:7px;color:#777;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:1px;}
+.pr-qty .pm-val{font-size:9.5px;font-weight:700;}
+
+/* Print section bar */
+.pr-bar{background:#e0e0e0;border:1px solid #999;border-bottom:none;padding:2px 5px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#222;margin-top:4px;}
+
+/* Print koli table */
+.pr-koli{width:100%;border-collapse:collapse;margin-bottom:3px;}
+.pr-koli th{background:#d8d8d8;border:1px solid #555;padding:2px 4px;font-size:8px;font-weight:700;text-align:center;text-transform:uppercase;}
+.pr-koli td{border:1px solid #555;padding:2px 4px;font-size:9px;text-align:center;font-family:'Courier New',monospace;}
+.pr-koli td.lt{text-align:left;font-size:8px;}
+.pr-koli tr.pr-gr td{background:#e8e8e8;font-weight:700;border:1px solid #555;}
+.pr-koli tr.pr-empty td{height:13px;border:1px solid #555;}
+
+/* Print summary table */
+.pr-sum{width:100%;border-collapse:collapse;margin-bottom:3px;}
+.pr-sum th{background:#d8d8d8;border:1px solid #999;padding:2px 4px;font-size:8px;font-weight:700;text-align:center;text-transform:uppercase;}
+.pr-sum td{border:1px solid #bbb;padding:2px 5px;font-size:9px;text-align:center;font-family:'Courier New',monospace;}
+.pr-sum td.row-lbl{text-align:left;font-family:'Arial',sans-serif;font-size:8.5px;color:#333;font-weight:600;}
+.pr-sum td.bold-t{font-weight:700;}
+
+/* Print notes */
+.pr-notes-wrap{border:1px solid #999;padding:5px 7px;min-height:32px;margin-bottom:3px;font-size:9px;}
+.pr-notes-lbl{font-size:7px;text-transform:uppercase;letter-spacing:0.06em;color:#777;margin-bottom:2px;}
+
+/* Print sig */
+.pr-sig{width:100%;border-collapse:collapse;margin-bottom:3px;}
+.pr-sig td{border:1px solid #999;padding:5px 8px;width:50%;vertical-align:top;}
+.pr-sig .sr{font-size:7px;text-transform:uppercase;letter-spacing:0.06em;color:#777;}
+.pr-sig .sn{font-size:10px;font-weight:700;margin-top:2px;}
+.pr-sig .sl{margin-top:18px;border-top:1px solid #aaa;font-size:7px;color:#aaa;padding-top:2px;}
+
+/* Print footer */
+.pr-foot{text-align:center;font-size:7.5px;color:#888;border-top:1px solid #ccc;padding-top:3px;margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <img src="data:image/png;base64,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" style="height:32px;width:auto;display:block">
+
+
+      <span id="topbar-sub" style="color:var(--muted);font-size:13px">Sevk Fişi</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm no-print" id="home-btn" onclick="showDashboard()" style="display:none">← Ana Sayfa</button>
+    </div>
+  </div>
+  <div class="main" id="main-content"></div>
+  <div id="print-area"></div>
+</div>
+
+<script>
+const SK_RECORDS  = 'kozan_sevk_v3';
+const SK_NAMES    = 'kozan_names_v1';
+const SK_PRODUCTS = 'kozan_products_v1';
+const SK_SIZES    = 'kozan_sizes_v1';
+
+const DEFAULT_SIZES = ['XXS','XS','S','M','L','XL','2XL','3XL','4XL'];
+function loadSizes(){ try{ const r=localStorage.getItem(SK_SIZES); return r?JSON.parse(r):[...DEFAULT_SIZES]; }catch(_){ return [...DEFAULT_SIZES]; } }
+function saveSizes(arr){ try{ localStorage.setItem(SK_SIZES,JSON.stringify(arr)); }catch(_){} }
+function sizeToKey(s){ return s.toLowerCase().replace(/[^a-z0-9]/g,'x').replace(/^[0-9]/,'x$&'); }
+
+let SIZES   = loadSizes();
+let SK_KEYS = SIZES.map(sizeToKey);
+
+function emptyRow(extras={}){ return Object.assign(SK_KEYS.reduce((o,k)=>(o[k]='',o),{}),{toplam:''},extras); }
+function emptyBox(extras={}){ return Object.assign({koli1:'',koli2:'',koliAdet:'1'},SK_KEYS.reduce((o,k)=>(o[k]='',o),{}),{brutKg:''},extras); }
+
+let uiLang = 'tr';
+const TR = {
+  'Shipment Records':'Sevk Kayıtları','New Shipment':'Yeni Sevk Fişi',
+  'No records yet.':'Henüz kayıt yok.','Create your first shipment form.':'İlk sevk fişinizi oluşturun.',
+  'saved':'kaydedildi','deleted':'silindi',
+};
+const t = s => uiLang==='tr' && TR[s] ? TR[s] : s;
+
+const DEFAULT_PRODUCTS = [
+  {name:'T-SHIRT',gramaj:180},{name:'SWEATSHIRT',gramaj:320},{name:'HOODIE',gramaj:380},
+  {name:'PANTOLON',gramaj:400},{name:'ŞORT',gramaj:220},{name:'ELBISE',gramaj:250},
+  {name:'TAKIM',gramaj:500},{name:'HIRKA',gramaj:350},{name:'CEKET',gramaj:600},{name:'MONT',gramaj:800}
+];
+const DEFAULT_NAMES = { fason:['Gürbüz Taşdemir'], utu:['Rıdvan Gün'] };
+
+const state = { screen:'dashboard', current:null, records:[] };
+
+function updateRecord(fn){
+  if(!state.current) return;
+  fn(state.current);
+
+  // 🔥 ADD THIS
+  if(state.current.kozanOrderNo){
+    state.current.id = state.current.kozanOrderNo;
+  }
+
+  const idx = state.records.findIndex(r=>r.id===state.current.id);
+  if(idx>=0) state.records[idx]=state.current;
+
+  persist();
+}
+
+function persist(){ try{ localStorage.setItem(SK_RECORDS, JSON.stringify(state.records)); }catch(_){} }
+function loadRecords(){ try{ const r=localStorage.getItem(SK_RECORDS); if(r) state.records=JSON.parse(r); }catch(_){} }
+function loadNames(){ try{ return JSON.parse(localStorage.getItem(SK_NAMES)||'null')||DEFAULT_NAMES; }catch(_){ return {...DEFAULT_NAMES}; } }
+function saveNames(n){ try{ localStorage.setItem(SK_NAMES, JSON.stringify(n)); }catch(_){} }
+function loadProducts(){
+  try{
+    const raw=localStorage.getItem(SK_PRODUCTS);
+    if(!raw) return DEFAULT_PRODUCTS.map(p=>({...p}));
+    const parsed=JSON.parse(raw);
+    // Migrate old string arrays to object format
+    if(Array.isArray(parsed) && parsed.length && typeof parsed[0]==='string'){
+      return parsed.map(name=>({name,gramaj:''}));
+    }
+    return parsed;
+  }catch(_){ return DEFAULT_PRODUCTS.map(p=>({...p})); }
+}
+function saveProducts(p){ try{ localStorage.setItem(SK_PRODUCTS, JSON.stringify(p)); }catch(_){} }
+
+// Helper: get gramaj for a given product name
+function getProductGramaj(tipName){
+  const p=loadProducts().find(p=>p.name===tipName);
+  return p ? (parseFloat(p.gramaj)||0) : 0;
+}
+loadRecords();
+
+const qs = s => document.querySelector(s);
+const render = html => qs('#main-content').innerHTML = html;
+function toast(msg,dur=2500){ const el=document.createElement('div'); el.className='toast'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),dur); }
+function today(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`; }
+function formatDate(iso){ if(!iso) return '—'; const d=new Date(iso),p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}`; }
+function closeModal(){ const m=qs('.modal-overlay'); if(m) m.remove(); }
+
+function calcRowTotal(box){
+  const sum = SK_KEYS.reduce((s, k) => s + (parseInt(box[k]) || 0), 0);
+  const koli = parseInt(box.koliAdet) || 0;
+
+  return sum * koli;
+}
+function calcColTotal(boxes, key){
+  return boxes.reduce((sum, b) => {
+    const val = parseFloat(b[key]) || 0;
+    const koli = parseFloat(b.koliAdet) || 0; // 👈 number of boxes
+    return sum + (val * koli);
+  }, 0);
+}
+
+// Auto Net KG: totalUnits (incl. koliAdet) * gramaj(g) / 1000
+function calcNetKgAuto(box, gramaj){
+  if(!gramaj) return '';
+  const tot = calcRowTotal(box);
+  if(!tot) return '';
+  const val = tot * gramaj / 1000;
+  const rounded = Math.round(val * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2).replace(/\.?0+$/,'');
+}
+
+// Brüt KG = Net KG + number of boxes in row (1 kg per box for packaging weight)
+function calcBrutKg(box, netKg){
+  const net = parseFloat(netKg)||0;
+  if(!net) return '';
+  const count = parseInt(box.koliAdet)||1;
+  const brut = net + count;
+  return Number.isInteger(brut)?String(brut):brut.toFixed(2).replace(/\.?0+$/,'');
+}
+
+// Legacy function (unused in main flow, kept for safety)
+function calcNetKg(box){
+  const brut = parseFloat(box.brutKg)||0;
+  if(!brut) return '';
+  const count = parseInt(box.koliAdet)||1;
+  const net = brut - count;
+  return net>0 ? (Number.isInteger(net)?String(net):net.toFixed(2).replace(/\.?0+$/,'')) : '';
+}
+
+// Effective netKg: auto = units * gramaj / 1000
+function getEffectiveNetKg(box, gramaj){
+  return gramaj ? calcNetKgAuto(box, gramaj) : '';
+}
+// Keep old name for remaining callers
+function getEffectiveBrutKg(box, gramaj){
+  return getEffectiveNetKg(box, gramaj);
+}
+
+function calcEksikAdet(r){
+  const totalSip = parseInt(r.summary.siparis.toplam) || 0;
+  const totalYuk = parseInt(r.summary.yukleme.toplam) || 0;
+
+  const hasSip = r.summary.siparis.toplam !== '' && r.summary.siparis.toplam !== undefined;
+  const hasYuk = r.summary.yukleme.toplam !== '' && r.summary.yukleme.toplam !== undefined;
+
+  if(!hasSip && !hasYuk){ 
+    r.eksikAdet = ''; 
+    return ''; 
+  }
+
+  const raw = totalYuk - totalSip;
+
+  // 🔥 NEW LOGIC
+  const val = raw > 0 ? 0 : raw * -1;
+
+  r.eksikAdet = val;
+  return val;
+}
+
+
+function updateEksikAdet(){
+  const r = state.current; 
+  if(!r) return;
+
+  autoCalcSummary(r);
+
+  const raw = parseFloat(calcEksikAdet(r)) || 0;
+  const val = raw > 0 ? 0 : raw;
+
+  persist();
+
+  const el = qs('#f-eksikAdet'); 
+  if(el) el.value = val;
+}
+
+function autoKoliNumbers(r){
+  // All koli1/koli2 are auto-calculated from the first row's koli1 (start) + each row's koliAdet
+  if(!r.boxes.length) return;
+  const start=parseInt(r.boxes[0].koli1)||1;
+  let next=start;
+  for(let i=0;i<r.boxes.length;i++){
+    const adet=Math.max(1,parseInt(r.boxes[i].koliAdet)||1);
+    r.boxes[i].koli1=String(next);
+    r.boxes[i].koli2=String(next+adet-1);
+    next+=adet;
+  }
+}
+
+function calcYuklemeToplam(r){ r.summary.yukleme.toplam=SK_KEYS.reduce((s,k)=>s+(parseInt(r.summary.yukleme[k])||0),0)||''; }
+
+function autoCalcSummary(r){
+  // recalc yukleme toplam from its own size cells (user-entered)
+  calcYuklemeToplam(r);
+  // recalc siparis toplam in case it drifted
+  calcSiparisToplam(r);
+  // recalc saglamUrun toplam
+  calcSaglamUrunToplam(r);
+  // recalc kalanSaglamUrun (1. Kalite) toplam
+  calcKalanSaglamUrunToplam(r);
+  // recalc ikiKaliteSaglamUrun (2. Kalite) toplam
+  calcIkiKaliteSaglamUrunToplam(r);
+  // recalc saglamUrunToplam (sum of 1. + 2. Kalite)
+  calcSaglamUrunGenel(r);
+  const totalSip=parseInt(r.summary.siparis.toplam)||0;
+  let totalF=0;
+  let anyEntered=false;
+  SK_KEYS.forEach(k=>{
+    const sip=parseInt(r.summary.siparis[k]);
+    const yuk=parseInt(r.summary.yukleme[k]);
+    const sipHasVal = r.summary.siparis[k]!=='' && r.summary.siparis[k]!==undefined;
+    const yukHasVal = r.summary.yukleme[k]!=='' && r.summary.yukleme[k]!==undefined;
+    if(sipHasVal || yukHasVal){
+      anyEntered=true;
+      const diff=(yuk||0)-(sip||0);
+      r.summary.fark[k]=diff; // can be 0
+      totalF+=diff;
+    } else {
+      r.summary.fark[k]='';
+    }
+  });
+  r.summary.fark.toplam=anyEntered?totalF:'';
+  // update eksik adet from summary totals
+  calcEksikAdet(r);
+  // calc fark % = yukleme / siparis * 100
+  if(!r.summary.fark_pct) r.summary.fark_pct=emptyRow();
+  let anyPct=false;
+  SK_KEYS.forEach(k=>{
+    const sip=parseInt(r.summary.siparis[k]);
+    const yuk=parseInt(r.summary.yukleme[k]);
+    const sipHasVal = r.summary.siparis[k]!=='' && r.summary.siparis[k]!==undefined;
+    const yukHasVal = r.summary.yukleme[k]!=='' && r.summary.yukleme[k]!==undefined;
+    if((sipHasVal || yukHasVal) && (sip||0)>0){
+      anyPct=true;
+      const raw=(yuk||0)/(sip||1)*100;
+      r.summary.fark_pct[k]=Math.round(raw*10)/10;
+    } else {
+      r.summary.fark_pct[k]='';
+    }
+  });
+  const totalSip2=parseInt(r.summary.siparis.toplam)||0;
+  const totalYuk2=parseInt(r.summary.yukleme.toplam)||0;
+  if(anyPct && totalSip2>0){
+    const rawTotal=totalYuk2/totalSip2*100;
+    r.summary.fark_pct.toplam=Math.round(rawTotal*10)/10;
+  } else {
+    r.summary.fark_pct.toplam='';
+  }
+}
+function calcSiparisToplam(r){ r.summary.siparis.toplam=SK_KEYS.reduce((s,k)=>s+(parseInt(r.summary.siparis[k])||0),0)||''; }
+function calcKesimToplam(r){   r.summary.kesim.toplam  =SK_KEYS.reduce((s,k)=>s+(parseInt(r.summary.kesim[k])||0),0)||''; }
+function calcSaglamUrunToplam(r){ if(!r.summary.saglamUrun) r.summary.saglamUrun=emptyRow(); r.summary.saglamUrun.toplam=SK_KEYS.reduce((s,k)=>s+(parseInt(r.summary.saglamUrun[k])||0),0)||''; }
+function calcKalanSaglamUrunToplam(r){ if(!r.summary.kalanSaglamUrun) r.summary.kalanSaglamUrun=emptyRow(); r.summary.kalanSaglamUrun.toplam=SK_KEYS.reduce((s,k)=>s+(parseInt(r.summary.kalanSaglamUrun[k])||0),0)||''; }
+function calcIkiKaliteSaglamUrunToplam(r){ if(!r.summary.ikiKaliteSaglamUrun) r.summary.ikiKaliteSaglamUrun=emptyRow(); r.summary.ikiKaliteSaglamUrun.toplam=SK_KEYS.reduce((s,k)=>s+(parseInt(r.summary.ikiKaliteSaglamUrun[k])||0),0)||''; }
+function calcSaglamUrunGenel(r){
+  if(!r.summary.saglamUrunToplam) r.summary.saglamUrunToplam=emptyRow();
+  SK_KEYS.forEach(k=>{
+    const a=parseInt((r.summary.kalanSaglamUrun||{})[k])||0;
+    const b=parseInt((r.summary.ikiKaliteSaglamUrun||{})[k])||0;
+    r.summary.saglamUrunToplam[k]=(a||b)?a+b:'';
+  });
+  const a=parseInt(r.summary.kalanSaglamUrun.toplam)||0;
+  const b=parseInt(r.summary.ikiKaliteSaglamUrun.toplam)||0;
+  r.summary.saglamUrunToplam.toplam=(a||b)?a+b:'';
+}
+
+function newRecord(){
+  return {
+    id:'', // 🔥 now will be set from Kozan Order No
+    createdAt:new Date().toISOString(),
+
+    tarih:today(),
+    kozanOrderNo:'',
+    musteriPoNo:'',
+    modelAdi:'',
+    tip:'',
+    gramaj:0,
+
+    renk:'',
+    kesimAdeti:'',
+    dikimSevkAdeti:'',
+    dikimIadeAdeti:'',
+    saglamUrunAdeti:'',
+    ikiKaliteAdeti:'',
+    eksikAdet:'',
+    errors:{baski:'',kumas:'',leke:'',renkFarki:'',aksesuar:'',digerHatalar:''},
+    boxes:[emptyBox(),emptyBox(),emptyBox()],
+    summary:{
+      siparis:             emptyRow(),
+      kesim:               emptyRow(),
+      yukleme:             emptyRow(),
+      saglamUrun:          emptyRow(),
+      kalanSaglamUrun:     emptyRow(),
+      ikiKaliteSaglamUrun: emptyRow(),
+      saglamUrunToplam:    emptyRow(),
+      fark:                emptyRow(),
+      fark_pct:            emptyRow(),
+    },
+    aciklama:'', fasonSorumlu:'', utuSorumlu:'',
+  };
+}
+
+
+// ══ DASHBOARD ═════════════════════════════════════════════════════════
+function showDashboard(){
+  state.screen='dashboard'; state.current=null;
+  qs('#home-btn').style.display='none';
+  const recs=[...state.records].sort((a,b)=>(b.createdAt||'')>(a.createdAt||'')?1:-1);
+  render(`
+    <div class="dash-header"><h2>Sevk Kayıtları</h2><p>Kozan Textile · Sevk Fişi Sistemi</p></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="showProductManager()">🏷️ Ürün Tipleri</button>
+      <button class="btn btn-ghost btn-sm" onclick="showNamesManager()">👤 İsimler</button>
+      <button class="btn btn-ghost btn-sm" onclick="showSizesManager()">📐 Bedenler</button>
+      <button class="btn btn-ghost btn-sm" onclick="showStorageInfo()">💾 Depolama</button>
+    </div>
+    ${recs.length ? recs.map(r=>`
+      <div class="record-card" onclick="openRecord('${r.id}')">
+        <div class="rc-left">
+          <h3>${r.kozanOrderNo||'—'} <span style="color:var(--muted);font-weight:400;font-size:12px">${r.modelAdi?'· '+r.modelAdi:''}</span></h3>
+          <p>${r.renk||'—'} · ${formatDate(r.createdAt)}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${r.dikimSevkAdeti?`<span class="total-pill">${r.dikimSevkAdeti} adet</span>`:''}
+          <button class="del-btn" onclick="event.stopPropagation();deleteRecord('${r.id}')">✕</button>
+        </div>
+      </div>`).join('') : `
+      <div class="empty-state"><div class="es-icon">📋</div><h3>Henüz kayıt yok.</h3><p>İlk sevk fişinizi oluşturun.</p></div>`}
+    <div style="height:80px"></div>
+    <div class="bottom-nav"><div></div><button class="btn btn-ghost" onclick="createNew()">+ Yeni Sevk Fişi</button></div>
+  `);
+}
+function deleteRecord(id){ if(!confirm('Bu kaydı silmek istiyor musunuz?')) return; state.records=state.records.filter(r=>r.id!==id); persist(); showDashboard(); toast('✓ Silindi'); }
+function showStorageInfo(){
+  const LIMIT = 5 * 1024 * 1024; // 5 MB standard localStorage limit
+  // Sum all keys in localStorage for total used
+  let allUsed = 0;
+  try { for(let k in localStorage){ allUsed += (localStorage.getItem(k)||'').length * 2; } } catch(_){}
+  const usedKB  = (allUsed / 1024).toFixed(1);
+  const limitMB = (LIMIT / 1024 / 1024).toFixed(0);
+  const pct     = Math.min(100, (allUsed / LIMIT) * 100);
+  const pctStr  = pct < 1 ? '<1' : pct.toFixed(0);
+  const barColor = pct > 80 ? 'var(--fail)' : pct > 50 ? 'var(--warn)' : '#22c55e';
+
+  const overlay = document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:540px">
+    <div class="modal-header" style="border-bottom:none;padding-bottom:0">
+      <div>
+        <h3 style="font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">⚙️</span> Depolama
+        </h3>
+        <p style="color:var(--muted);font-size:13px;margin-top:4px">Bu uygulamanın yerel depolama alanını yönetin.</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding-top:14px">
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;color:var(--muted)">Depolama kullanımı</span>
+          <span style="font-size:13px;font-weight:700;color:${barColor}">${usedKB} KB / ~${limitMB} MB (${pctStr}%)</span>
+        </div>
+        <div style="height:6px;background:var(--surface);border-radius:4px;overflow:hidden;margin-bottom:14px">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:${barColor};border-radius:4px;transition:width 0.4s"></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px">
+          Depolama alanı doluysa kaydetme sırasında eski raporlar kaybolabilir. Alan açmak için temizleyin. Önce raporları PDF olarak dışa aktarın. Kişi ve müşteri listeleri etkilenmeyecek.
+        </p>
+        <button class="btn btn-danger" style="width:100%;justify-content:center;padding:12px" onclick="clearReportsOnly()">
+          🗑️ Tüm Raporları Temizle
+        </button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function clearReportsOnly(){
+  if(!confirm('Tüm sevk fişleri silinecek. Emin misiniz?')) return;
+  try{ localStorage.removeItem(SK_RECORDS); }catch(_){}
+  state.records=[]; state.current=null;
+  closeModal();
+  showDashboard();
+  toast('✓ Tüm raporlar temizlendi');
+}
+function openRecord(id){
+  state.current=state.records.find(r=>r.id===id);
+  if(!state.current) return;
+  // Backfill gramaj if missing (old records)
+  if(!state.current.gramaj && state.current.tip){
+    state.current.gramaj=getProductGramaj(state.current.tip)||0;
+  }
+  state.screen='form'; qs('#home-btn').style.display=''; renderForm();
+}
+function createNew(){ const rec=newRecord(); state.records.push(rec); state.current=rec; persist(); state.screen='form'; qs('#home-btn').style.display=''; renderForm(); }
+
+
+// ══ SIZES MANAGER ═════════════════════════════════════════════════════
+// ══ SIZE PRESETS ══════════════════════════════════════════════════════
+const SK_PRESETS = 'kozan_size_presets_v1';
+const BUILTIN_PRESETS = [
+  {name:'Standart', sizes:['2XS','XS','S','M','L','XL','2XL','3XL'], builtin:true},
+  {name:'JD',       sizes:['8-10 YRS','10-12 YRS','12-13 YRS','13-15 YRS'], builtin:true},
+];
+function loadPresets(){ try{ const r=localStorage.getItem(SK_PRESETS); return r?JSON.parse(r):[]; }catch(_){ return []; } }
+function savePresets(p){ try{ localStorage.setItem(SK_PRESETS,JSON.stringify(p)); }catch(_){} }
+function allPresets(){ return [...BUILTIN_PRESETS, ...loadPresets()]; }
+
+function showSizesManager(){
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:680px;width:95vw">
+    <div class="modal-header"><h3>📐 Bedenler</h3><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;min-height:320px">
+
+      <!-- LEFT: PRESETS -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:2px">Kayıtlı Aralıklar</div>
+        <div id="presets-list" style="display:flex;flex-direction:column;gap:6px;flex:1"></div>
+        <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:6px">Mevcut listeyi kaydet</div>
+          <div style="display:flex;gap:6px">
+            <input id="preset-name-inp" class="mini-input" style="flex:1" placeholder="Aralık adı (ör: Çocuk, Büyük Beden…)"
+              onkeydown="if(event.key==='Enter')saveCurrentAsPreset()">
+            <button class="btn btn-ghost btn-sm" onclick="saveCurrentAsPreset()">Kaydet</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: ACTIVE SIZES -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:2px">Aktif Bedenler</div>
+        <div id="sizes-list" style="display:flex;flex-direction:column;gap:5px;flex:1"></div>
+        <div style="display:flex;gap:6px;padding-top:6px;border-top:1px solid var(--border)">
+          <input id="sz-inp" class="mini-input" style="flex:1" placeholder="Yeni beden ekle…" maxlength="20"
+            onkeydown="if(event.key==='Enter')addSize()"
+            >
+          <button class="btn btn-ghost btn-sm" onclick="addSize()">+ Ekle</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="resetSizes()" style="color:var(--muted);margin-right:auto">↺ Varsayılana sıfırla</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Kapat</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  renderPresetsList();
+  renderSizesList();
+}
+
+function renderPresetsList(){
+  const list=qs('#presets-list'); if(!list) return;
+  const presets=allPresets();
+  if(!presets.length){ list.innerHTML=`<div style="color:var(--muted);font-size:12px;padding:8px 0">Henüz kayıtlı aralık yok.</div>`; return; }
+  const isActive = p => p.sizes.length===SIZES.length && p.sizes.every((s,i)=>s===SIZES[i]);
+  list.innerHTML=presets.map((p,i)=>{
+    const active=isActive(p);
+    const customIdx = p.builtin ? -1 : i - BUILTIN_PRESETS.length;
+    return `<div style="display:flex;align-items:center;gap:6px;background:${active?'rgba(58,111,212,0.12)':'var(--bg3)'};border:1px solid ${active?'var(--accent)':'var(--border2)'};border-radius:var(--r-sm);padding:6px 10px;cursor:pointer" onclick="applyPreset(${i})">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:${active?'var(--accent)':'var(--text)'}">${p.name}${p.builtin?'':''} ${active?'<span style="font-size:9px;background:var(--accent);color:#fff;border-radius:3px;padding:1px 5px;margin-left:4px">AKTİF</span>':''}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.sizes.join(' · ')}</div>
+      </div>
+      ${!p.builtin?`<button class="del-btn" onclick="event.stopPropagation();deletePreset(${customIdx})" title="Sil">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderSizesList(){
+  const list=qs('#sizes-list'); if(!list) return;
+  list.innerHTML=SIZES.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:5px 8px">
+      <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;flex:1">${s}</span>
+      <button onclick="moveSizeUp(${i})" ${i===0?'disabled':''} style="width:22px;height:22px;border:1px solid var(--border2);background:var(--bg3);color:${i===0?'var(--muted)':'var(--text)'};border-radius:4px;cursor:${i===0?'default':'pointer'};font-size:11px;display:flex;align-items:center;justify-content:center">↑</button>
+      <button onclick="moveSizeDown(${i})" ${i===SIZES.length-1?'disabled':''} style="width:22px;height:22px;border:1px solid var(--border2);background:var(--bg3);color:${i===SIZES.length-1?'var(--muted)':'var(--text)'};border-radius:4px;cursor:${i===SIZES.length-1?'default':'pointer'};font-size:11px;display:flex;align-items:center;justify-content:center">↓</button>
+      <button onclick="removeSize(${i})" class="del-btn">✕</button>
+    </div>`).join('');
+}
+
+function applyPreset(idx){
+  const p=allPresets()[idx];
+  if(!p) return;
+  SIZES=[...p.sizes];
+  SK_KEYS=SIZES.map(sizeToKey);
+  saveSizes(SIZES);
+  renderSizesList();
+  renderPresetsList();
+  toast(`✓ "${p.name}" uygulandı`);
+}
+
+function saveCurrentAsPreset(){
+  const inp=qs('#preset-name-inp'); if(!inp) return;
+  const name=(inp.value||'').trim();
+  if(!name){ toast('⚠️ Aralık adı girin'); return; }
+  const custom=loadPresets();
+  if([...BUILTIN_PRESETS,...custom].find(p=>p.name===name)){ toast('⚠️ Bu isim zaten var'); return; }
+  custom.push({name, sizes:[...SIZES]});
+  savePresets(custom);
+  inp.value='';
+  renderPresetsList();
+  toast(`✓ "${name}" kaydedildi`);
+}
+
+function deletePreset(customIdx){
+  const custom=loadPresets();
+  if(!custom[customIdx]) return;
+  const name=custom[customIdx].name;
+  if(!confirm(`"${name}" silinsin mi?`)) return;
+  custom.splice(customIdx,1);
+  savePresets(custom);
+  renderPresetsList();
+  toast('✓ Silindi');
+}
+
+function addSize(){
+  const inp=qs('#sz-inp'); if(!inp) return;
+  const val=(inp.value||'').trim().toUpperCase();
+  if(!val){ toast('⚠️ Beden adı girin'); return; }
+  if(SIZES.includes(val)){ toast('⚠️ Bu beden zaten var'); return; }
+  SIZES.push(val);
+  SK_KEYS=SIZES.map(sizeToKey);
+  saveSizes(SIZES);
+  inp.value='';
+  renderSizesList();
+  renderPresetsList();
+  toast('✓ Eklendi');
+}
+
+function removeSize(idx){
+  if(SIZES.length<=1){ toast('⚠️ En az 1 beden olmalı'); return; }
+  SIZES.splice(idx,1);
+  SK_KEYS=SIZES.map(sizeToKey);
+  saveSizes(SIZES);
+  renderSizesList();
+  renderPresetsList();
+  toast('✓ Silindi');
+}
+
+function moveSizeUp(idx){
+  if(idx===0) return;
+  [SIZES[idx-1],SIZES[idx]]=[SIZES[idx],SIZES[idx-1]];
+  SK_KEYS=SIZES.map(sizeToKey);
+  saveSizes(SIZES);
+  renderSizesList();
+  renderPresetsList();
+}
+
+function moveSizeDown(idx){
+  if(idx===SIZES.length-1) return;
+  [SIZES[idx+1],SIZES[idx]]=[SIZES[idx],SIZES[idx+1]];
+  SK_KEYS=SIZES.map(sizeToKey);
+  saveSizes(SIZES);
+  renderSizesList();
+  renderPresetsList();
+}
+
+function resetSizes(){
+  if(!confirm('Bedenler varsayılan listeye sıfırlanacak. Emin misiniz?')) return;
+  SIZES=[...DEFAULT_SIZES];
+  SK_KEYS=SIZES.map(sizeToKey);
+  saveSizes(SIZES);
+  renderSizesList();
+  renderPresetsList();
+  toast('✓ Sıfırlandı');
+}
+
+// ══ PRODUCT MANAGER ═══════════════════════════════════════════════════
+function showProductManager(){
+  const products=loadProducts();
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal">
+    <div class="modal-header"><h3>🏷️ Ürün Tipleri</h3><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:6px;margin-bottom:12px;align-items:center">
+        <input id="np-inp" class="mini-input" style="flex:2" placeholder="Ürün adı..." onkeydown="if(event.key==='Enter')addProduct()">
+        <input id="np-gramaj" class="mini-input" style="flex:1;max-width:80px" placeholder="g (gram)" type="number" min="0" onkeydown="if(event.key==='Enter')addProduct()">
+        <button class="btn btn-ghost btn-sm" onclick="addProduct()">Ekle</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;align-items:center;margin-bottom:6px;padding:0 6px">
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em">Ürün Adı</span>
+        <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;text-align:center">Gramaj</span>
+        <span></span>
+      </div>
+      <div id="product-list">${renderProductList(products)}</div>
+    </div>
+    <div class="modal-footer">
+      <span style="font-size:11px;color:var(--muted);flex:1">Gramaj girilince Net KG otomatik hesaplanır.</span>
+      <button class="btn btn-ghost" onclick="closeModal()">Kapat</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function renderProductList(products){
+  return products.map((p,i)=>`
+    <div class="name-item" style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center">
+      <span style="font-size:13px">${p.name}</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input type="number" min="0" value="${p.gramaj||''}" placeholder="g"
+          onchange="updateProductGramaj(${i},this.value)"
+          style="width:70px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:4px 8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;text-align:right">
+        <span style="font-size:11px;color:var(--muted)">g</span>
+      </div>
+      <button class="del-btn" onclick="removeProduct(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addProduct(){
+  const inp=qs('#np-inp'), gramajInp=qs('#np-gramaj');
+  const val=(inp.value||'').trim().toUpperCase();
+  const gramaj=parseFloat(gramajInp.value)||'';
+  if(!val) return;
+  const p=loadProducts();
+  if(p.find(x=>x.name===val)){toast('⚠️ Zaten var');return;}
+  p.push({name:val,gramaj});
+  saveProducts(p);
+  inp.value=''; gramajInp.value='';
+  const l=qs('#product-list'); if(l) l.innerHTML=renderProductList(p);
+  toast('✓ Eklendi');
+}
+
+function removeProduct(idx){ const p=loadProducts(); p.splice(idx,1); saveProducts(p); const l=qs('#product-list'); if(l) l.innerHTML=renderProductList(p); toast('✓ Silindi'); }
+
+function updateProductGramaj(idx, val){
+  const p=loadProducts();
+  p[idx].gramaj=parseFloat(val)||'';
+  saveProducts(p);
+  if(state.current && state.current.tip===p[idx].name && state.screen==='form') renderForm();
+  toast('✓ Gramaj güncellendi');
+}
+
+// ══ NAMES MANAGER ══════════════════════════════════════════════════════
+function showNamesManager(){
+  const names=loadNames();
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal">
+    <div class="modal-header"><h3>👤 İsimler</h3><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="card-title" style="margin-bottom:8px">Fason Sorumlusu</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input id="nf-inp" class="mini-input" style="flex:1" placeholder="İsim ekle..." onkeydown="if(event.key==='Enter')addName('fason')">
+        <button class="btn btn-ghost btn-sm" onclick="addName('fason')">Ekle</button>
+      </div>
+      <div id="fason-list">${(names.fason||[]).map((n,i)=>`<div class="name-item"><span>${n}</span><button class="del-btn" onclick="removeName('fason',${i})">✕</button></div>`).join('')}</div>
+      <div class="section-divider" style="margin-top:14px"><span class="sd-label">Ütü Paketleme Sorumlusu</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input id="nu-inp" class="mini-input" style="flex:1" placeholder="İsim ekle..." onkeydown="if(event.key==='Enter')addName('utu')">
+        <button class="btn btn-ghost btn-sm" onclick="addName('utu')">Ekle</button>
+      </div>
+      <div id="utu-list">${(names.utu||[]).map((n,i)=>`<div class="name-item"><span>${n}</span><button class="del-btn" onclick="removeName('utu',${i})">✕</button></div>`).join('')}</div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Kapat</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function addName(role){ const inp=qs(`#n${role[0]}-inp`),val=(inp.value||'').trim(); if(!val) return; const names=loadNames(); if(!names[role]) names[role]=[]; if(names[role].includes(val)){toast('⚠️ Zaten var');return;} names[role].push(val); saveNames(names); inp.value=''; const l=qs(`#${role}-list`); if(l) l.innerHTML=(names[role]||[]).map((n,i)=>`<div class="name-item"><span>${n}</span><button class="del-btn" onclick="removeName('${role}',${i})">✕</button></div>`).join(''); toast('✓ Eklendi'); }
+function removeName(role,idx){ const names=loadNames(); if(!names[role]) return; names[role].splice(idx,1); saveNames(names); const l=qs(`#${role}-list`); if(l) l.innerHTML=(names[role]||[]).map((n,i)=>`<div class="name-item"><span>${n}</span><button class="del-btn" onclick="removeName('${role}',${i})">✕</button></div>`).join(''); toast('✓ Silindi'); }
+
+// ══ FORM RENDER ════════════════════════════════════════════════════════
+function renderForm(){
+  const r=state.current; if(!r) return;
+  autoCalcSummary(r);
+  const products=loadProducts();
+  const names=loadNames();
+  const prodOpts=products.map(p=>`<option value="${p.name}" ${r.tip===p.name?'selected':''}>${p.name}</option>`).join('');
+  const fasonOpts=`<option value="">— Seç —</option>`+(names.fason||[]).map(n=>`<option value="${n}" ${r.fasonSorumlu===n?'selected':''}>${n}</option>`).join('');
+  const utuOpts=`<option value="">— Seç —</option>`+(names.utu||[]).map(n=>`<option value="${n}" ${r.utuSorumlu===n?'selected':''}>${n}</option>`).join('');
+
+  const gramaj = parseFloat(r.gramaj)||0;
+
+  const boxRows=r.boxes.map((b,i)=>{
+    const tot=calcRowTotal(b);
+    const effNet = getEffectiveNetKg(b, gramaj);
+    const effBrut = effNet!=='' ? calcBrutKg(b, effNet) : '';
+    const netIsAuto = gramaj && effNet!=='';
+    return `<tr>
+      <td class="row-num">${i+1}</td>
+      <td style="padding:2px;white-space:nowrap">
+        <div style="display:flex;align-items:center;justify-content:center;gap:2px">
+          <button onclick="stepKoliAdet(${i},-1)" style="width:22px;height:22px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);border-radius:4px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>
+          <input value="${b.koliAdet||'1'}" oninput="updateBoxKoli(${i},'koliAdet',this.value)" style="width:32px;text-align:center;background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);font-weight:700" inputmode="numeric">
+          <button onclick="stepKoliAdet(${i},1)" style="width:22px;height:22px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);border-radius:4px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>
+        </div>
+      </td>
+      ${i===0?`<td><input class="auto-val" value="${b.koli1||'1'}" readonly tabindex="-1" style="min-width:28px;color:var(--muted)"></td>`:`<td><input class="auto-val" value="${b.koli1||''}" readonly tabindex="-1" style="min-width:28px"></td>`}
+      <td><input class="auto-val" value="${b.koli2||''}" readonly tabindex="-1" style="min-width:28px"></td>
+      ${SK_KEYS.map(k=>`<td><input value="${b[k]||''}" oninput="updateBox(${i},'${k}',this.value)" style="min-width:32px"></td>`).join('')}
+      <td><input class="auto-val" id="bt-tot-${i}" value="${tot||''}" readonly tabindex="-1" style="min-width:38px"></td>
+      <td><input class="auto-val" id="bt-net-${i}" value="${effNet}" readonly tabindex="-1" style="min-width:42px" title="${netIsAuto?`Otomatik: ${gramaj}g × adet`:''}"></td>
+      <td><input class="auto-val" id="bt-brut-${i}" value="${effBrut}" readonly tabindex="-1" style="min-width:42px" title="${effBrut?`Net + koli sayısı`:''}"></td>
+      <td style="padding:2px" class="no-print"><button class="del-btn" onclick="removeBox(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const grdTotal=r.boxes.reduce((s,b)=>s+calcRowTotal(b),0);
+
+  const summaryRows=[
+    {key:'siparis',   label:'Sipariş Adeti',  cls:'siparis-row',    editable:true},
+    {key:'kesim',     label:'Kesim Adeti',     cls:'kesim-row',      editable:true},
+    {key:'yukleme',   label:'Yükleme Adeti',   cls:'yukleme-row',    editable:true},
+    {key:'fark',      label:'Fark',            cls:'fark-row',       editable:false},
+    {key:'fark_pct',  label:'Fark %',          cls:'fark-pct-row',   editable:false},
+  ].map(row=>{
+    const rowData = r.summary[row.key] || {};
+    const cells=SK_KEYS.map(k=>{
+      const v=rowData[k];
+      if(row.editable) return `<td><input value="${v||''}" oninput="updateSummary('${row.key}','${k}',this.value)"></td>`;
+      const disp = (v!==''&&v!==undefined) ? (row.key==='fark_pct'?v+'%':v) : '—';
+      return `<td class="${(row.key==='fark'||row.key==='fark_pct')?'fark-cell':''}">${disp}</td>`;
+    }).join('');
+    const tot=rowData.toplam;
+    const totDisp = (tot!==''&&tot!==undefined) ? (row.key==='fark_pct'?tot+'%':tot) : '—';
+    const totTd=row.editable
+      ? `<td class="total-cell"><input class="auto-val" id="sum-tot-${row.key}" value="${tot!==''&&tot!==undefined?tot:''}" readonly tabindex="-1"></td>`
+      : `<td class="${(row.key==='fark'||row.key==='fark_pct')?'fark-cell':'total-cell'}" id="sum-tot-${row.key}">${totDisp}</td>`;
+    return `<tr class="${row.cls}"><td class="label-cell">${row.label}</td>${cells}${totTd}</tr>`;
+  }).join('');
+
+  render(`
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">Sipariş Bilgileri</div>
+        <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">📅 ${r.tarih}</span>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Kozan Sipariş No</label><input value="${r.kozanOrderNo||''}" placeholder=" " oninput="updateField('kozanOrderNo',this.value)"></div>
+        <div class="field"><label>Müşteri PO No</label><input value="${r.musteriPoNo||''}" placeholder=" " oninput="updateField('musteriPoNo',this.value)"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Model Adı</label><input id="f-modeladi" value="${r.modelAdi||''}" placeholder=" " oninput="updateField('modelAdi',this.value)"></div>
+        <div class="field"><label>Ürün Tipi</label>
+          <select oninput="updateField('tip',this.value);updateField('gramaj',getProductGramaj(this.value));renderForm()">${prodOpts}</select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Renk</label><input value="${r.renk||''}" placeholder=" " oninput="updateField('renk',this.value)"></div>
+        <div class="field"><label>Kesim Adeti</label><input type="number" value="${r.kesimAdeti||''}" placeholder=" " oninput="updateField('kesimAdeti',this.value)"></div>
+      </div>
+      <div class="section-divider"><span class="sd-label">Adet Bilgileri</span></div>
+      <div class="grid-3">
+        <div class="field"><label>Dikim Sevk Adeti</label><input type="number" value="${r.dikimSevkAdeti||''}" placeholder=" " oninput="updateField('dikimSevkAdeti',this.value)"></div>
+        <div class="field"><label>Dikim İade Adeti</label><input type="number" value="${r.dikimIadeAdeti||''}" placeholder=" " oninput="updateField('dikimIadeAdeti',this.value)"></div>
+        <div class="field"><label>Sağlam Ürün Adeti</label><input type="number" value="${r.saglamUrunAdeti||''}" placeholder=" " oninput="updateField('saglamUrunAdeti',this.value)"></div>
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>2. Kalite Adeti</label><input type="number" value="${r.ikiKaliteAdeti||''}" placeholder=" " oninput="updateField('ikiKaliteAdeti',this.value)"></div>
+        <div class="field"><label>Eksik Adet <span style="font-size:9px;color:var(--accent2)">(Yük. − Sip.)</span></label><input type="number" id="f-eksikAdet" value="${calcEksikAdet(r)}" readonly tabindex="-1" class="auto-val" style="color:var(--accent2);background:var(--bg3)"></div>
+      </div>
+      <div class="section-divider"><span class="sd-label">Hata Türleri</span></div>
+      <div class="grid-3">
+        <div class="field"><label>Baskı/Nakış Hatası</label><input value="${r.errors.baski||''}" placeholder=" " oninput="updateError('baski',this.value)"></div>
+        <div class="field"><label>Kumaş Hatası</label><input value="${r.errors.kumas||''}" placeholder=" " oninput="updateError('kumas',this.value)"></div>
+        <div class="field"><label>Leke</label><input value="${r.errors.leke||''}" placeholder="—" oninput="updateError('leke',this.value)"></div>
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Renk Farkı</label><input value="${r.errors.renkFarki||''}" placeholder=" " oninput="updateError('renkFarki',this.value)"></div>
+        <div class="field"><label>Aksesuar Hatası</label><input value="${r.errors.aksesuar||''}" placeholder=" " oninput="updateError('aksesuar',this.value)"></div>
+        <div class="field"><label>Diğer Hatalar</label><input value="${r.errors.digerHatalar||''}" placeholder=" " oninput="updateError('digerHatalar',this.value)"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Beden Dağılımı</div>
+      <div class="box-table-wrapper">
+        <table class="summary-table">
+          <thead><tr>
+            <th class="left-th" style="min-width:110px">Tür</th>
+            ${SIZES.map(s=>`<th>${s}</th>`).join('')}
+            <th>Toplam</th>
+          </tr></thead>
+          <tbody>${summaryRows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Sağlam Ürünler</div>
+      <div class="box-table-wrapper">
+        <table class="summary-table">
+          <thead><tr>
+            <th class="left-th" style="min-width:110px">Tür</th>
+            ${SIZES.map(s=>`<th>${s}</th>`).join('')}
+            <th>Toplam</th>
+          </tr></thead>
+          <tbody>${(()=>{
+            const buildRow = (key, label, cls) => {
+              const rowData = r.summary[key] || {};
+              const cells = SK_KEYS.map(k => {
+                const v = rowData[k];
+                return `<td><input value="${v||''}" oninput="updateSummary('${key}','${k}',this.value)"></td>`;
+              }).join('');
+              const tot = rowData.toplam;
+              const totTd = `<td class="total-cell"><input class="auto-val" id="sum-tot-${key}" value="${tot!==''&&tot!==undefined?tot:''}" readonly tabindex="-1"></td>`;
+              return `<tr class="${cls}"><td class="label-cell">${label}</td>${cells}${totTd}</tr>`;
+            };
+            const buildTotalRow = () => {
+              const rowData = r.summary.saglamUrunToplam || {};
+              const cells = SK_KEYS.map(k => {
+                const v = rowData[k];
+                return `<td class="total-cell" style="font-weight:600">${v!==''&&v!==undefined?v:''}</td>`;
+              }).join('');
+              const tot = rowData.toplam;
+              return `<tr style="background:rgba(34,197,94,0.18);font-weight:700"><td class="label-cell">Toplam</td>${cells}<td class="total-cell" style="font-weight:700" id="sum-tot-saglamUrunToplam">${tot!==''&&tot!==undefined?tot:''}</td></tr>`;
+            };
+            return buildRow('kalanSaglamUrun','1. Kalite','kalanSaglamUrun-row')
+                 + buildRow('ikiKaliteSaglamUrun','2. Kalite','ikiKaliteSaglamUrun-row')
+                 + buildTotalRow();
+          })()}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Açıklama & İmza</div>
+      <div class="field">
+        <label>Açıklama</label>
+        <textarea style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none;resize:vertical;min-height:70px;" oninput="updateField('aciklama',this.value)">${r.aciklama||''}</textarea>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Fason Sorumlusu</label><select oninput="updateField('fasonSorumlu',this.value)">${fasonOpts}</select></div>
+        <div class="field"><label>Ütü Paketleme Sorumlusu</label><select oninput="updateField('utuSorumlu',this.value)">${utuOpts}</select></div>
+      </div>
+      <div style="margin-top:8px;padding-top:10px;border-top:1px solid var(--border)">
+        <span style="font-size:11px;color:var(--muted)">KOZAN İÇ VE DIŞ TİC. A.Ş. · Beylikdüzü OSB Mah. Hürriyet Bulvarı, No: 8 Kat: 4 Beylikdüzü/İstanbul · +90 (212) 879 09 34</span>
+      </div>
+    </div>
+
+    <div style="height:80px"></div>
+    <div class="bottom-nav no-print">
+      <button class="btn btn-ghost" onclick="showDashboard()">← Vazgeç</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="saveCurrent()">💾 Kaydet</button>
+        <button class="btn btn-ghost" onclick="saveAndPrint()">🖨️ Kaydet & Yazdır</button>
+      </div>
+    </div>
+  `);
+}
+
+// ══ MULTI BOX QUICK ENTRY ═════════════════════════════════════════════
+function showMultiBox(){
+  const r=state.current;
+  const nextK=(r.boxes.length ? (parseInt(r.boxes[r.boxes.length-1].koli2)||r.boxes.length)+1 : 1);
+  const overlay=document.createElement('div'); overlay.className='modal-overlay';
+  overlay.innerHTML=`<div class="modal" style="max-width:500px">
+    <div class="modal-header"><h3>📦 Hızlı Koli Ekle</h3><button class="btn btn-ghost btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px">Aynı beden dağılımına sahip birden fazla koli ekleyin.</p>
+      <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:600">Koli No Başlangıç</label><input id="mb-k1" type="number" class="mini-input" value="${nextK}" style="width:90px"></div>
+        <div style="padding-bottom:9px;color:var(--muted)">—</div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:600">Koli No Bitiş</label><input id="mb-k2" type="number" class="mini-input" value="${nextK}" style="width:90px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        ${SIZES.map((s,i)=>`<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:600">${s}</label><input id="mb-${SK_KEYS[i]}" type="number" class="mini-input" placeholder="0"></div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);font-weight:600">Brüt KG (her koli)</label><input id="mb-brut" type="number" class="mini-input" placeholder="ör: 14.5" step="0.1"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">İptal</button>
+      <button class="btn btn-ghost" onclick="applyMultiBox()">Ekle</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function applyMultiBox(){
+  const k1=parseInt(qs('#mb-k1').value)||1;
+  const k2=parseInt(qs('#mb-k2').value)||k1;
+  const brutKg=qs('#mb-brut').value||'';
+  const sizes={}; SK_KEYS.forEach(k=>{ sizes[k]=qs(`#mb-${k}`)?.value||''; });
+  updateRecord(r=>{
+    for(let i=k1;i<=k2;i++){
+      r.boxes.push({koli1:String(i),koli2:String(i),...sizes,brutKg});
+    }
+    autoCalcSummary(r);
+  });
+  closeModal(); renderForm();
+  toast(`✓ ${k2-k1+1} koli satırı eklendi`);
+}
+
+// ══ UPDATES ════════════════════════════════════════════════════════════
+function updateField(key,val){ updateRecord(r=>{ r[key]=val; }); }
+function updateError(key,val){ updateRecord(r=>{ r.errors[key]=val; }); }
+
+function stepKoliAdet(idx, delta){
+  const r=state.current; if(!r||!r.boxes[idx]) return;
+  const cur=Math.max(1,parseInt(r.boxes[idx].koliAdet)||1);
+  const next=Math.max(1,cur+delta);
+  updateRecord(r=>{ r.boxes[idx].koliAdet=String(next); autoKoliNumbers(r); autoCalcSummary(r); });
+  renderForm();
+}
+
+function updateBoxKoli(idx,key,val){
+  updateRecord(r=>{
+    r.boxes[idx][key]=val;
+    autoKoliNumbers(r);
+    autoCalcSummary(r);
+    // Save effective brutKg for all boxes into storage
+    const g=parseFloat(r.gramaj)||0;
+    if(g){
+      r.boxes.forEach(b=>{ if(!b.brutKgManual) b.brutKg=calcBrutKgAuto(b,g)||''; });
+    }
+  });
+  renderForm();
+}
+
+function updateBox(idx,key,val){
+  updateRecord(r=>{
+    r.boxes[idx][key]=val;
+    autoCalcSummary(r);
+  });
+  // Update only totals/kg cells — no full re-render so focus is preserved
+  refreshTotals();
+  refreshSummaryDisplay();
+  const eksEl=qs('#f-eksikAdet');
+  if(eksEl&&state.current){ const v=state.current.eksikAdet; eksEl.value=(v!==''&&v!==undefined)?v:''; }
+}
+
+function refreshBrutKgAll(){
+  // gramaj already saved to r by updateField before this is called
+  renderForm();
+}
+
+function updateBrutKg(idx, val){
+  // Brüt KG is now always auto-calculated (Net KG + box count), no manual override
+}
+
+function updateSummary(rowKey,sizeKey,val){
+  updateRecord(r=>{
+    r.summary[rowKey][sizeKey]=val;
+    if(rowKey==='siparis')    calcSiparisToplam(r);
+    if(rowKey==='kesim')                calcKesimToplam(r);
+    if(rowKey==='yukleme')              calcYuklemeToplam(r);
+    if(rowKey==='saglamUrun')           calcSaglamUrunToplam(r);
+    if(rowKey==='kalanSaglamUrun')      { calcKalanSaglamUrunToplam(r); calcSaglamUrunGenel(r); }
+    if(rowKey==='ikiKaliteSaglamUrun')  { calcIkiKaliteSaglamUrunToplam(r); calcSaglamUrunGenel(r); }
+    autoCalcSummary(r);
+  });
+  refreshSummaryDisplay();
+  // update eksik adet display
+  const eksEl=qs('#f-eksikAdet');
+  if(eksEl&&state.current){ const v=state.current.eksikAdet; eksEl.value=(v!==''&&v!==undefined)?v:''; }
+}
+
+function refreshTotals(){
+  const r=state.current; if(!r) return;
+  const gramaj=parseFloat(r.gramaj)||0;
+  SK_KEYS.forEach(k=>{ const el=qs(`#ft-${k}`); if(el) el.value=calcColTotal(r.boxes,k)||''; });
+  const g=qs('#ft-grand'); if(g) g.value=r.boxes.reduce((s,b)=>s+calcRowTotal(b),0)||'';
+  const fmtKg=v=>v?(Number.isInteger(v)?String(v):v.toFixed(1).replace(/\.0$/,'')):''
+  const totalNet=r.boxes.reduce((s,b)=>s+(parseFloat(getEffectiveNetKg(b,gramaj))||0),0);
+  const totalBrut=r.boxes.reduce((s,b)=>{
+    const n=getEffectiveNetKg(b,gramaj);
+    return s+(parseFloat(n)?parseFloat(calcBrutKg(b,n))||0:0);
+  },0);
+  const nEl=qs('#ft-net-kg');  if(nEl) nEl.value=fmtKg(totalNet);
+  const bEl=qs('#ft-brut-kg'); if(bEl) bEl.value=fmtKg(totalBrut);
+  // Update per-row net and brut cells without re-rendering
+  r.boxes.forEach((b,i)=>{
+    const tot=calcRowTotal(b);
+    const effNet=getEffectiveNetKg(b,gramaj);
+    const effBrut=effNet!==''?calcBrutKg(b,effNet):'';
+    const totEl=qs(`#bt-tot-${i}`); if(totEl) totEl.value=tot||'';
+    const netEl=qs(`#bt-net-${i}`); if(netEl) netEl.value=effNet;
+    const brutEl=qs(`#bt-brut-${i}`); if(brutEl) brutEl.value=effBrut;
+  });
+}
+
+function refreshSummaryDisplay(){
+  const r=state.current; if(!r) return;
+  autoCalcSummary(r);
+  // siparis & kesim totals
+  const st=qs('#sum-tot-siparis'); if(st) st.value=r.summary.siparis.toplam!==''?r.summary.siparis.toplam:'';
+  const kt=qs('#sum-tot-kesim');   if(kt) kt.value=r.summary.kesim.toplam!==''?r.summary.kesim.toplam:'';
+  // yukleme row — editable
+  const ytot=qs('#sum-tot-yukleme'); if(ytot) ytot.value=r.summary.yukleme.toplam!==''?r.summary.yukleme.toplam:'';
+  // kalanSaglamUrun (1. Kalite) — editable, separate table
+  const ksut=qs('#sum-tot-kalanSaglamUrun'); if(ksut){ if(!r.summary.kalanSaglamUrun) r.summary.kalanSaglamUrun=emptyRow(); ksut.value=r.summary.kalanSaglamUrun.toplam!==''?r.summary.kalanSaglamUrun.toplam:''; }
+  // ikiKaliteSaglamUrun (2. Kalite) — editable, separate table
+  const ik2=qs('#sum-tot-ikiKaliteSaglamUrun'); if(ik2){ if(!r.summary.ikiKaliteSaglamUrun) r.summary.ikiKaliteSaglamUrun=emptyRow(); ik2.value=r.summary.ikiKaliteSaglamUrun.toplam!==''?r.summary.ikiKaliteSaglamUrun.toplam:''; }
+  // saglamUrunToplam — read-only sum row
+  const sgt=qs('#sum-tot-saglamUrunToplam'); if(sgt){ calcSaglamUrunGenel(r); const t=r.summary.saglamUrunToplam.toplam; sgt.textContent=t!==''&&t!==undefined?t:''; }
+  const rows=document.querySelectorAll('.summary-table tbody tr');
+  if(rows[3]){
+    const tds=rows[3].querySelectorAll('td');
+    SK_KEYS.forEach((k,i)=>{
+      if(tds[i+1]){
+        const v=r.summary.fark[k];
+        tds[i+1].textContent=(v!==''&&v!==undefined)?v:'—';
+      }
+    });
+    const l=tds[SK_KEYS.length+1];
+    if(l){
+      const ft=r.summary.fark.toplam;
+      l.textContent=(ft!==''&&ft!==undefined)?ft:'—';
+    }
+    const ftot=qs('#sum-tot-fark');
+    if(ftot){
+      const ft=r.summary.fark.toplam;
+      ftot.textContent=(ft!==''&&ft!==undefined)?ft:'—';
+    }
+  }
+  if(rows[4]){
+    if(!r.summary.fark_pct) r.summary.fark_pct=emptyRow();
+    const tds=rows[4].querySelectorAll('td');
+    SK_KEYS.forEach((k,i)=>{
+      if(tds[i+1]){
+        const v=r.summary.fark_pct[k];
+        tds[i+1].textContent=(v!==''&&v!==undefined)?v+'%':'—';
+      }
+    });
+    const l=tds[SK_KEYS.length+1];
+    if(l){
+      const ft=r.summary.fark_pct.toplam;
+      l.textContent=(ft!==''&&ft!==undefined)?ft+'%':'—';
+    }
+    const ftot=qs('#sum-tot-fark_pct');
+    if(ftot){
+      const ft=r.summary.fark_pct.toplam;
+      ftot.textContent=(ft!==''&&ft!==undefined)?ft+'%':'—';
+    }
+  }
+  // eksik adet
+  const eksEl=qs('#f-eksikAdet');
+  if(eksEl){ const v=r.eksikAdet; eksEl.value=(v!==''&&v!==undefined)?v:''; }
+  // toplam brut/net kg pills
+  const brutEl=qs('#toplam-brut-kg'); const netEl=qs('#toplam-net-kg');
+  if(brutEl||netEl){
+    const totalBrut=r.boxes.reduce((s,b)=>s+(parseFloat(b.brutKg)||0),0);
+    const totalNet=r.boxes.reduce((s,b)=>s+(parseFloat(calcNetKg(b))||0),0);
+    const fmtKg=v=>v?(Number.isInteger(v)?String(v):v.toFixed(1).replace(/\.0$/,'')):'-';
+    if(brutEl) brutEl.textContent=fmtKg(totalBrut)+' kg';
+    if(netEl)  netEl.textContent=fmtKg(totalNet)+' kg';
+  }
+}
+
+function addBox(){ updateRecord(r=>{ r.boxes.push(emptyBox()); autoKoliNumbers(r); autoCalcSummary(r); }); renderForm(); }
+function removeBox(idx){ updateRecord(r=>{ r.boxes.splice(idx,1); autoKoliNumbers(r); autoCalcSummary(r); }); renderForm(); }
+function saveCurrent(){ if(!state.current) return; persist(); }
+
+function saveAndPrint(){
+  saveCurrent();
+  buildPrint();
+  const r = state.current;
+  const orderNo = (r.kozanOrderNo||'').trim();
+  const filename = orderNo ? `${orderNo} KAPANIŞ FİŞİ` : 'KAPANIŞ FİŞİ';
+  const prevTitle = document.title;
+  document.title = filename;
+  window.print();
+  document.title = prevTitle;
+}
+
+// ══ PRINT BUILD ════════════════════════════════════════════════════════
+function buildPrint(){
+  const r=state.current; if(!r) return;
+  autoCalcSummary(r);
+  const dash=v=>v||'—';
+
+  // Only include rows that have at least one size filled
+  const gramajPrint = parseFloat(r.gramaj)||0;
+  const getEffNet = b => getEffectiveNetKg(b, gramajPrint);
+  const filledBoxes = r.boxes.filter(b =>
+    SK_KEYS.some(k => parseInt(b[k]) > 0)
+  );
+
+  const boxTrs=filledBoxes.map(b=>{
+    const tot=calcRowTotal(b);
+    const effNet=getEffNet(b);
+    const effBrut=effNet!==''?calcBrutKg(b,effNet):'';
+    return `<tr>
+      <td>${b.koli1||''}</td><td>${b.koli2||''}</td>
+      <td class="lt">${r.modelAdi||''}</td>
+      ${SK_KEYS.map(k=>`<td>${b[k]||''}</td>`).join('')}
+      <td style="font-weight:700">${tot||''}</td>
+      <td>${effNet||''}</td>
+      <td>${effBrut||''}</td>
+    </tr>`;
+  }).join('');
+
+  // Totals calculated from filledBoxes
+  const totalNetKg  = filledBoxes.reduce((s,b)=>s+(parseFloat(getEffNet(b))||0),0);
+  const totalBrutKg = filledBoxes.reduce((s,b)=>{const n=getEffNet(b);return s+(parseFloat(n)?parseFloat(calcBrutKg(b,n))||0:0);},0);
+  const fmtKg = v => v ? (Number.isInteger(v)?String(v):v.toFixed(1).replace(/\.0$/,'')) : '';
+
+  const sumTrs=[
+    {key:'siparis',   label:'Sipariş Adeti'},
+    {key:'kesim',     label:'Kesim Adeti'},
+    {key:'yukleme',   label:'Yükleme Adeti'},
+    {key:'fark',      label:'Fark'},
+    {key:'fark_pct',  label:'Fark %'},
+  ].map(rd=>`<tr>
+    <td class="row-lbl">${rd.label}</td>
+    ${SK_KEYS.map(k=>{
+      const src = rd.key==='fark_pct' ? (r.summary.fark_pct||{}) : (r.summary[rd.key]||{});
+      const v=src[k];
+      if(rd.key==='fark'){
+        return `<td>${(v!==''&&v!==undefined)?v:''}</td>`;
+      }
+      if(rd.key==='fark_pct'){
+        return `<td>${(v!==''&&v!==undefined)?v+'%':''}</td>`;
+      }
+      return `<td>${v||''}</td>`;
+    }).join('')}
+    <td class="bold-t">${(()=>{
+      const src = rd.key==='fark_pct' ? (r.summary.fark_pct||{}) : r.summary[rd.key];
+      const t=src.toplam;
+      if(rd.key==='fark') return (t!==''&&t!==undefined)?t:'';
+      if(rd.key==='fark_pct') return (t!==''&&t!==undefined)?t+'%':'';
+      return t||'';
+    })()}</td>
+  </tr>`).join('');
+
+  qs('#print-area').innerHTML=`<div class="pr">
+    <!-- HEADER -->
+    <div class="pr-head">
+      <div class="pr-logo-wrap">
+          <img src="data:image/png;base64,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" style="height:32px;width:auto;display:block">
+      </div>
+      <div class="pr-right">
+        <div style="font-size:13px;font-weight:700;letter-spacing:0.04em">SEVKİYAT FİŞİ</div>
+        <div class="pr-tarih">Tarih &nbsp;: &nbsp;${r.tarih||today()}</div>
+      </div>
+    </div>
+
+    <!-- META INFO -->
+    <table class="pr-meta">
+      <tr>
+        <td style="width:25%"><span class="pm-label">Kozan Order No</span><span class="pm-val">${dash(r.kozanOrderNo)}</span></td>
+        <td style="width:16%"><span class="pm-label">Dikim Sevk Adeti</span><span class="pm-val">${dash(r.dikimSevkAdeti)}</span></td>
+        <td style="width:16%"><span class="pm-label">Baskı/Nakış Hatası</span><span class="pm-val">${dash(r.errors.baski)}</span></td>
+      </tr>
+      <tr>
+          <td><span class="pm-label">Müşteri PO No</span><span class="pm-val">${dash(r.musteriPoNo)}</span></td>
+        <td><span class="pm-label">Dikim İade Adeti</span><span class="pm-val">${dash(r.dikimIadeAdeti)}</span></td>
+        <td><span class="pm-label">Kumaş Hatası</span><span class="pm-val">${dash(r.errors.kumas)}</span></td>
+      </tr>
+      <tr>
+        <td><span class="pm-label">Model Adı</span><span class="pm-val">${dash(r.modelAdi)}</span></td>
+        <td><span class="pm-label">Sağlam Ürün Adeti</span><span class="pm-val">${dash(r.saglamUrunAdeti)}</span></td>
+        <td><span class="pm-label">Leke</span><span class="pm-val">${dash(r.errors.leke)}</span></td>
+      </tr>
+      <tr>
+        <td><span class="pm-label">Renk</span><span class="pm-val">${dash(r.renk)}</span></td>
+        <td><span class="pm-label">2. Kalite Adeti</span><span class="pm-val">${dash(r.ikiKaliteAdeti)}</span></td>
+        <td><span class="pm-label">Renk Farkı</span><span class="pm-val">${dash(r.errors.renkFarki)}</span></td>
+      </tr>
+      <tr>
+        <td><span class="pm-label">Kesim Adeti</span><span class="pm-val">${dash(r.kesimAdeti)}</span></td>
+        <td><span class="pm-label">Eksik Adet</span><span class="pm-val">${(()=>{ const v=calcEksikAdet(r); return (v!==''&&v!==undefined)?v:'—'; })()}</span></td>
+        <td><span class="pm-label">Aksesuar Hatası</span><span class="pm-val">${dash(r.errors.aksesuar)}</span></td>
+      </tr>
+      <tr>
+        <td><span class="pm-label">Ürün Türü</span><span class="pm-val">${dash(r.tip)}</span></td>
+        <td colspan="2"><span class="pm-label">Diğer Hatalar</span><span class="pm-val">${dash(r.errors.digerHatalar)}</span></td>
+      </tr>
+    </table>
+
+    <!-- BEDEN DAGILIMI -->
+    <div class="pr-bar">BEDEN DAĞILIMI</div>
+    <table class="pr-sum">
+      <thead><tr>
+        <th style="text-align:left;width:90px">Tür</th>
+        ${SIZES.map(s=>`<th>${s}</th>`).join('')}
+        <th>Toplam</th>
+      </tr></thead>
+      <tbody>${sumTrs}</tbody>
+    </table>
+
+    <!-- SAĞLAM ÜRÜNLER -->
+    <div class="pr-bar">SAĞLAM ÜRÜNLER</div>
+    <table class="pr-sum">
+      <thead><tr>
+        <th style="text-align:left;width:90px">Tür</th>
+        ${SIZES.map(s=>`<th>${s}</th>`).join('')}
+        <th>Toplam</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="row-lbl">1. Kalite</td>
+          ${SK_KEYS.map(k=>`<td>${(r.summary.kalanSaglamUrun||{})[k]||''}</td>`).join('')}
+          <td class="bold-t">${(r.summary.kalanSaglamUrun||{}).toplam||''}</td>
+        </tr>
+        <tr>
+          <td class="row-lbl">2. Kalite</td>
+          ${SK_KEYS.map(k=>`<td>${(r.summary.ikiKaliteSaglamUrun||{})[k]||''}</td>`).join('')}
+          <td class="bold-t">${(r.summary.ikiKaliteSaglamUrun||{}).toplam||''}</td>
+        </tr>
+        <tr style="font-weight:700;background:rgba(34,197,94,0.12)">
+          <td class="row-lbl">Toplam</td>
+          ${SK_KEYS.map(k=>`<td>${(r.summary.saglamUrunToplam||{})[k]||''}</td>`).join('')}
+          <td class="bold-t">${(r.summary.saglamUrunToplam||{}).toplam||''}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ACIKLAMA -->
+    <div class="pr-notes-lbl">AÇIKLAMA</div>
+    <div class="pr-notes-wrap">${r.aciklama||''}</div>
+
+    <!-- IMZA/FOOTER -->
+    <div class="pr-footer-wrap">
+    <table class="pr-sig">
+      <tr>
+        <td><div class="sr">Fason Sorumlusu</div><div class="sn">${r.fasonSorumlu||''}</div><div class="sl">İmza</div></td>
+        <td><div class="sr">Ütü Paketleme Sorumlusu</div><div class="sn">${r.utuSorumlu||''}</div><div class="sl">İmza</div></td>
+      </tr>
+    </table>
+
+    <!-- FOOTER -->
+    <div class="pr-foot">KOZAN İÇ VE DIŞ TİC. A.Ş. &nbsp;·&nbsp; Beylikdüzü OSB Mah. Hürriyet Bulvarı, No: 8 Kat: 4 Beylikdüzü/İstanbul &nbsp;·&nbsp; +90 (212) 879 09 34</div>
+    </div>
+  </div>`;
+}
+
+// ══ INIT ══════════════════════════════════════════════════════════════
+showDashboard();
+</script>
+</body>
+</html>
