@@ -189,19 +189,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   background:#fff;
 }
 
-/* When print-area is made visible for capture, footer sits at bottom */
-#print-area .pr-footer-wrap{
-  margin-top:12px;
-  background:#fff;
-  padding:0 0 3px;
-}
-
 /* Print typography */
 .pr{
   font-family:'Arial',sans-serif;
   font-size:9.5px;
   color:#111;
   background:#fff;
+  width:794px;
+  min-height:1082px; /* A4 at 96dpi (297mm) minus 10mm margins ≈ 1082px */
+  display:flex;
+  flex-direction:column;
+  box-sizing:border-box;
+}
+
+/* Footer always pushed to bottom */
+.pr-footer-wrap{
+  margin-top:auto;
+  background:#fff;
+  padding-top:6px;
 }
 
 /* Print header */
