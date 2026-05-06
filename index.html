@@ -157,12 +157,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     page-break-inside:avoid;
   }
 
-  /* Footer FIX (no more forced new page) */
+  /* Signature + footer pinned to bottom of page */
   .pr-footer-wrap{
-    position:static;
-    margin-top:8px;
+    position:fixed;
+    bottom:0;
+    left:5mm;
+    right:5mm;
     background:#fff;
-    padding:0 5mm 3mm;
+    padding:0 0 3mm;
+  }
+
+  /* Add bottom padding to main content so it doesn't slide under the fixed footer */
+  .pr{
+    padding-bottom:55mm;
   }
 
   /* Images */
@@ -551,7 +558,9 @@ function newRecord(){
       fark:                emptyRow(),
       fark_pct:            emptyRow(),
     },
-    aciklama:'', fasonSorumlu:'', utuSorumlu:'',
+    aciklama:'',
+    fasonSorumlu:(function(){ const n=loadNames(); return (n.fason&&n.fason[0])||''; })(),
+    utuSorumlu:  (function(){ const n=loadNames(); return (n.utu  &&n.utu[0])  ||''; })(),
   };
 }
 
@@ -1302,33 +1311,34 @@ function downloadPDF(){
 
   const el = document.getElementById('print-area');
   const content = el.innerHTML;
-
-  // Grab all style tags from this page
   const styles = Array.from(document.querySelectorAll('style')).map(s => s.innerText).join('\n');
 
   const printHTML = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">'
-    + '<style>' + styles + 'html,body{margin:0;padding:0;background:#fff;}'
+    + '<style>' + styles
+    + 'html,body{margin:0;padding:0;background:#fff;}'
     + '#print-area{display:block!important;}'
     + '@media print{html,body{height:auto!important;margin:0;padding:0;}body{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;}#print-area{display:block!important;}@page{margin:5mm;size:A4 portrait;}}'
-    + '</style></head><body><div id="print-area">' + content + '</div></body></html>';
+    + '</style>'
+    + '<script>window.onload=function(){window.print();}<\/script>'
+    + '</head><body><div id="print-area">' + content + '</div></body></html>';
 
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;border:none;';
-  document.body.appendChild(iframe);
+  // Use a Blob URL — works on both desktop and mobile browsers
+  const blob = new Blob([printHTML], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
 
-  const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-  iDoc.open();
-  iDoc.write(printHTML);
-  iDoc.close();
+  // Fallback: if popup was blocked, open inline
+  if (!win) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.click();
+  }
 
-  iframe.onload = function() {
-    setTimeout(function() {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      setTimeout(function() { document.body.removeChild(iframe); }, 2000);
-    }, 800);
-  };
+  // Clean up blob URL after a delay
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
 }
 
 // ══ PRINT BUILD ════════════════════════════════════════════════════════
