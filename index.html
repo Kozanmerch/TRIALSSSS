@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Kozan Textile · Sevk Fişi</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg:#0d0f14; --bg2:#161a22; --bg3:#1e2330; --surface:#242938;
@@ -180,11 +182,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   }
 }
 
-/* Hide print area on screen */
+/* Hide print area on screen normally */
 #print-area{
   display:none;
   color:#111;
   background:#fff;
+}
+
+/* When print-area is made visible for capture, footer sits at bottom */
+#print-area .pr-footer-wrap{
+  margin-top:12px;
+  background:#fff;
+  padding:0 0 3px;
 }
 
 /* Print typography */
@@ -1309,36 +1318,74 @@ function downloadPDF(){
   saveCurrent();
   buildPrint();
 
+  const r = state.current;
+  const kozanNo = (r && r.kozanOrderNo && r.kozanOrderNo.trim()) ? r.kozanOrderNo.trim() : 'sevk';
   const el = document.getElementById('print-area');
-  const content = el.innerHTML;
-  const styles = Array.from(document.querySelectorAll('style')).map(s => s.innerText).join('\n');
 
-  const printHTML = '<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">'
-    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">'
-    + '<style>' + styles
-    + 'html,body{margin:0;padding:0;background:#fff;}'
-    + '#print-area{display:block!important;}'
-    + '@media print{html,body{height:auto!important;margin:0;padding:0;}body{background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;}#print-area{display:block!important;}@page{margin:5mm;size:A4 portrait;}}'
-    + '</style>'
-    + '<script>window.onload=function(){window.print();}<\/script>'
-    + '</head><body><div id="print-area">' + content + '</div></body></html>';
+  // Make visible off-screen so html2canvas can render it
+  el.style.cssText = 'display:block;position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:-1;';
 
-  // Use a Blob URL — works on both desktop and mobile browsers
-  const blob = new Blob([printHTML], { type: 'text/html' });
-  const url  = URL.createObjectURL(blob);
-  const win  = window.open(url, '_blank');
+  // Show loading toast
+  toast('⏳ PDF hazırlanıyor…', 8000);
 
-  // Fallback: if popup was blocked, open inline
-  if (!win) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.click();
-  }
+  html2canvas(el, {
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    backgroundColor: '#ffffff',
+    width: 794,
+    windowWidth: 794
+  }).then(function(canvas) {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
-  // Clean up blob URL after a delay
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    const pageW = pdf.internal.pageSize.getWidth();   // 210mm
+    const pageH = pdf.internal.pageSize.getHeight();  // 297mm
+    const margin = 5;
+    const contentW = pageW - margin * 2;
+    const contentH = pageH - margin * 2;
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.97);
+    const canvasW = canvas.width;
+    const canvasH = canvas.height;
+
+    // Scale canvas to fit page width
+    const ratio = contentW / (canvasW / 2); // /2 because scale:2
+    const totalImgH = (canvasH / 2) * ratio;
+
+    // Split into pages if content is taller than one page
+    let yOffset = 0;
+    let pageNum = 0;
+    while (yOffset < totalImgH) {
+      if (pageNum > 0) pdf.addPage();
+
+      // Source slice in canvas pixels
+      const srcY = (yOffset / ratio) * 2;
+      const srcH = (contentH / ratio) * 2;
+
+      // Draw just this slice
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvasW;
+      sliceCanvas.height = Math.min(srcH, canvasH - srcY);
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, srcY, canvasW, sliceCanvas.height, 0, 0, canvasW, sliceCanvas.height);
+
+      const sliceH = (sliceCanvas.height / 2) * ratio;
+      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.97), 'JPEG', margin, margin, contentW, sliceH);
+
+      yOffset += contentH;
+      pageNum++;
+    }
+
+    pdf.save(kozanNo + '.pdf');
+
+    // Restore hidden state
+    el.style.cssText = '';
+  }).catch(function(err) {
+    console.error('PDF error:', err);
+    toast('❌ PDF oluşturulamadı');
+    el.style.cssText = '';
+  });
 }
 
 // ══ PRINT BUILD ════════════════════════════════════════════════════════
