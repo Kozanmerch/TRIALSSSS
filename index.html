@@ -177,6 +177,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Hide print area on screen */
 #print-area{
   display:none;
+  color:#111;
+  background:#fff;
 }
 
 /* Print typography */
@@ -1298,19 +1300,43 @@ function saveAndPrint(){
 function downloadPDF(){
   saveCurrent();
   buildPrint();
+
   const r = state.current;
-  const kozanNo = (r && r.kozanOrderNo) ? r.kozanOrderNo.trim() : 'sevk';
-  const element = document.getElementById('print-area');
+  const kozanNo = (r && r.kozanOrderNo && r.kozanOrderNo.trim()) ? r.kozanOrderNo.trim() : 'sevk';
+
+  const el = document.getElementById('print-area');
+
+  // Temporarily position off-screen so html2canvas can measure it
+  el.style.position   = 'fixed';
+  el.style.left       = '-9999px';
+  el.style.top        = '0';
+  el.style.width      = '210mm';
+  el.style.background = '#fff';
+  el.style.display    = 'block';
 
   const opt = {
-    margin:       5,
-    filename:     (kozanNo || 'sevk') + '.pdf',
-    image:        { type: 'jpeg', quality: 1 },
-    html2canvas:  { scale: 3, useCORS: true },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    margin:      [5, 5, 5, 5],   // mm  top right bottom left
+    filename:    kozanNo + '.pdf',
+    image:       { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale:       2,
+      useCORS:     true,
+      logging:     false,
+      width:       794,          // A4 at 96dpi
+      windowWidth: 794
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(element).save();
+  html2pdf().set(opt).from(el).save().then(function(){
+    // Restore hidden state
+    el.style.position   = '';
+    el.style.left       = '';
+    el.style.top        = '';
+    el.style.width      = '';
+    el.style.background = '';
+    el.style.display    = 'none';
+  });
 }
 
 // ══ PRINT BUILD ════════════════════════════════════════════════════════
