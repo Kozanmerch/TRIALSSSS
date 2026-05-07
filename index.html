@@ -2637,19 +2637,19 @@ function showManagePeople() {
 
     <div class="divider" style="margin:20px 0 8px"></div>
     <div style="font-size:13px;font-weight:600;color:#a78bfa;margin-bottom:4px">${t('⚡ In-Line Control Report / Ara Kontrol')}</div>
-    ${roleSection('interim-qc',t('QC Name · Kalite Kontrolcü (In-Line)'), ip.qc, 'addInterimPerson', 'deleteInterimPerson')}
+    ${roleSection('interim-qc',t('QC Name · Kalite Kontrolcü (In-Line)'), ip.qc, 'addInterimPerson', 'deleteInterimPerson', true)}
     <div class="divider"></div>
-    ${roleSection('interim-supervisor',t('Sorumlu · Supervisor (In-Line)'), ip.supervisor, 'addInterimPerson', 'deleteInterimPerson')}
+    ${roleSection('interim-supervisor',t('Sorumlu · Supervisor (In-Line)'), ip.supervisor, 'addInterimPerson', 'deleteInterimPerson', true)}
 
     <div class="divider" style="margin:20px 0 8px"></div>
     <div style="font-size:13px;font-weight:600;color:var(--pass);margin-bottom:4px">${t('✅ Final Checklist · Son Kontrol Listesi')}</div>
-    ${roleSection('cl-checkedBy', t('Checklist Staff · Kontrol Personeli') + ' <span style="font-size:10px;font-weight:400;color:var(--muted)">(Checked By / Kontrol Eden)</span>', cp.checkedBy, 'addChecklistPerson', 'deleteChecklistPerson')}
+    ${roleSection('cl-checkedBy', t('Checklist Staff · Kontrol Personeli') + ' <span style="font-size:10px;font-weight:400;color:var(--muted)">(Checked By / Kontrol Eden)</span>', cp.checkedBy, 'addChecklistPerson', 'deleteChecklistPerson', true)}
     <div class="divider"></div>
-    ${roleSection('cl-packingSupv',t('Packing Supervisor · Paketleme Sorumlusu'), cp.packingSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
+    ${roleSection('cl-packingSupv',t('Packing Supervisor · Paketleme Sorumlusu'), cp.packingSupv, 'addChecklistPerson', 'deleteChecklistPerson', true)}
     <div class="divider"></div>
-    ${roleSection('cl-qcSupv',t('QC Supervisor · QC Sorumlusu'), cp.qcSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
+    ${roleSection('cl-qcSupv',t('QC Supervisor · QC Sorumlusu'), cp.qcSupv, 'addChecklistPerson', 'deleteChecklistPerson', true)}
     <div class="divider"></div>
-    ${roleSection('cl-warehouseSupv',t('Warehouse Supervisor · Depo Sorumlusu'), cp.warehouseSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
+    ${roleSection('cl-warehouseSupv',t('Warehouse Supervisor · Depo Sorumlusu'), cp.warehouseSupv, 'addChecklistPerson', 'deleteChecklistPerson', true)}
 
     <div style="height:20px"></div>
   `);
