@@ -415,8 +415,11 @@ body {
 
 const STORAGE_KEY      = 'aql_reports_v1';
 const INTERIM_KEY      = 'aql_interim_v1';
+const CHECKLIST_KEY    = 'aql_checklists_v1';
 const KOZAN_JPEG_LOGO = 'data:image/jpeg;base64,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';
 const PEOPLE_KEY       = 'aql_people';
+const INTERIM_PEOPLE_KEY = 'aql_interim_people';
+const CHECKLIST_PEOPLE_KEY = 'aql_checklist_people';
 const CUSTOMERS_KEY    = 'aql_customers';
 const MAX_STORED       = Infinity;
 const PHOTO_MAX_DIM    = 1200;
@@ -692,6 +695,8 @@ const state = {
   currentReport: null,
   reports: [],
   interimReports: [],
+  checklists: [],
+  currentChecklist: null,
   currentInterim: null,
   cameraStream: null,
   photoLabel: 'Front View',
@@ -827,6 +832,13 @@ function importReports(input) {
 // ══════════════════════════════════════════════════════════════════════
 
 function loadPeople()     { try { return JSON.parse(localStorage.getItem(PEOPLE_KEY) || 'null') || {qc:[],dept:[],qa:[],supplier:[]}; } catch(_){ return {qc:[],dept:[],qa:[],supplier:[]}; } }
+function loadInterimPeople() { try { return JSON.parse(localStorage.getItem(INTERIM_PEOPLE_KEY) || 'null') || {qc:[],supervisor:[]}; } catch(_){ return {qc:[],supervisor:[]}; } }
+function saveInterimPeople(p) { try { localStorage.setItem(INTERIM_PEOPLE_KEY, JSON.stringify(p)); } catch(_) {} }
+function loadChecklistPeople() { try { return JSON.parse(localStorage.getItem(CHECKLIST_PEOPLE_KEY) || 'null') || {packingSupv:[],qcSupv:[],warehouseSupv:[]}; } catch(_){ return {packingSupv:[],qcSupv:[],warehouseSupv:[]}; } }
+function saveChecklistPeople(p) { try { localStorage.setItem(CHECKLIST_PEOPLE_KEY, JSON.stringify(p)); } catch(_) {} }
+function loadChecklists() { try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '[]'); } catch(_){ return []; } }
+function saveChecklists() { try { localStorage.setItem(CHECKLIST_KEY, JSON.stringify(state.checklists)); } catch(_) {} }
+(function initChecklists() { state.checklists = loadChecklists(); })();
 function loadCustomers()  { try { return JSON.parse(localStorage.getItem(CUSTOMERS_KEY) || '[]'); } catch(_){ return []; } }
 
 async function savePeople(p) {
@@ -1079,9 +1091,11 @@ function hideHomeBtn() {
 
 function showDashboard() {
   stopCamera();
+  _interimCamOpen = false;
   state.screen = 'dashboard';
   state.currentReport = null;
   state.currentInterim = null;
+  state.currentChecklist = null;
   hideHomeBtn();
   const langBtn = qs('#lang-btn');
   if (langBtn) langBtn.textContent = uiLang === 'tr' ? '🇬🇧 English' : '🇹🇷 Türkçe';
@@ -1118,9 +1132,16 @@ function showDashboard() {
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button class="btn btn-primary btn-lg" style="flex:1" onclick="startNewOrder()">+ ${t('New Inspection')}</button>
     </div>
-    <div style="margin-bottom:14px">
+    <div style="margin-bottom:8px">
       <input id="search-po" placeholder="🔍 ${t('Search by PO number...')}" oninput="filterOrders()"
         style="width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none">
+    </div>
+    <div style="margin-bottom:14px">
+      <select id="filter-brand" onchange="filterOrders()"
+        style="width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:#111;outline:none">
+        <option value="">🏷 All Brands</option>
+        ${[...new Set([...state.reports.map(r=>r.customer||''), ...state.interimReports.map(r=>r.customer||'')].filter(Boolean))].sort().map(c=>`<option value="${c}">${c}</option>`).join('')}
+      </select>
     </div>
     <div class="card-title" style="margin-bottom:10px">${t('Orders')}</div>
     <div id="order-list"></div>
@@ -1130,9 +1151,11 @@ function showDashboard() {
 }
 
 function filterOrders() {
-  const po = (qs('#search-po')?.value || '').toLowerCase().trim();
+  const po    = (qs('#search-po')?.value || '').toLowerCase().trim();
+  const brand = (qs('#filter-brand')?.value || '').toLowerCase().trim();
   const orders = (state._orders || []).filter(o => {
     if (po && !(o.orderno||'').toLowerCase().includes(po) && !(o.customer||'').toLowerCase().includes(po)) return false;
+    if (brand && (o.customer||'').toLowerCase() !== brand) return false;
     return true;
   });
   const list = qs('#order-list');
@@ -1158,14 +1181,41 @@ function filterOrders() {
       <div>
         <div class="oc-title">${o.customer||'—'} &nbsp;·&nbsp; ${o.orderno||'—'}</div>
         <div class="oc-meta" style="margin-top:5px">
-          ${ii > 0 ? `<span class="badge badge-interim">⚡ ${ii} Interim</span>` : ''}
+          ${ii > 0 ? `<span class="badge badge-interim">⚡ ${ii} Ara Kontrol</span>` : ''}
           ${fi > 0 ? `<span class="badge" style="background:rgba(58,111,212,0.12);color:var(--accent2)">📋 ${fi} Final</span>` : ''}
           ${resultBadge}
         </div>
       </div>
-      <span style="color:var(--muted);font-size:20px">›</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteOrder('${encodeURIComponent(o.customer||'')}','${encodeURIComponent(o.orderno||'')}')">🗑 Delete</button>
+        <span style="color:var(--muted);font-size:20px">›</span>
+      </div>
     </div>`;
   }).join('');
+}
+
+async function deleteOrder(customerEnc, ordernoEnc) {
+  const customer = decodeURIComponent(customerEnc);
+  const orderno  = decodeURIComponent(ordernoEnc);
+  if (!confirm(`Delete ALL reports for ${customer} · ${orderno}?\n\nThis will permanently remove all interim and final reports for this order. Make sure you have saved PDFs first.`)) return;
+  // Remove final reports
+  const toDelete = state.reports.filter(r => r.customer === customer && r.orderno === orderno);
+  state.reports = state.reports.filter(r => !(r.customer === customer && r.orderno === orderno));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.reports)); } catch(_) {}
+  // Remove interim reports
+  state.interimReports = state.interimReports.filter(r => !(r.customer === customer && r.orderno === orderno));
+  saveInterimReports();
+  // Remove checklists
+  state.checklists = state.checklists.filter(c => !(c.customer === customer && c.orderno === orderno));
+  saveChecklists();
+  // Delete from Supabase
+  if (typeof sb !== 'undefined') {
+    for (const r of toDelete) {
+      try { await sb.rest('DELETE', 'reports', null, { id: `eq.${r.id}` }); } catch(e) { console.warn('[AQL] Delete failed:', e.message); }
+    }
+  }
+  toast(`🗑 Order deleted: ${customer} · ${orderno}`);
+  showDashboard();
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1187,7 +1237,7 @@ function startNewOrder() {
       <div class="report-type-card interim" onclick="createNewInterim()">
         <div class="rtc-icon">⚡</div>
         <div class="rtc-body">
-          <h3>Interim Control Report · Ara Kontrol Raporu</h3>
+          <h3>Ara Kontrol Raporu · Interim Control Report</h3>
           <p>Mid-production quality check. Records packaging, criteria findings, and signatures.</p>
         </div>
       </div>
@@ -1223,6 +1273,389 @@ function createNewFinal() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
+// FINAL CHECKLIST — structure & data
+// ══════════════════════════════════════════════════════════════════════
+
+const CHECKLIST_SECTIONS = [
+  {
+    id: 'packaging',
+    title: 'PACKAGING CHECKLIST · PAKETLEME CHECKLİST',
+    items: [
+      { id: 'po_verified',         en: 'PO Number verified / PO numarası kontrol edildi' },
+      { id: 'style_verified',      en: 'Style name verified / Model adı kontrol edildi' },
+      { id: 'colour_verified',     en: 'Colour verified / Renk kontrol edildi' },
+      { id: 'size_breakdown',      en: 'Size breakdown verified / Beden dağılımı kontrol edildi' },
+      { id: 'barcode_verified',    en: 'Barcode verified / Barkod kontrol edildi' },
+      { id: 'carton_label',        en: 'Carton label verified / Koli etiketi kontrol edildi' },
+      { id: 'carton_qty',          en: 'Carton quantities verified / Koli adetleri kontrol edildi' },
+      { id: 'packing_list',        en: 'Packing list matches physical qty / Packing list fiziksel adet ile eşleşiyor' },
+      { id: 'polybag',             en: 'Polybag verified / Poşet kontrol edildi' },
+    ],
+  },
+  {
+    id: 'production',
+    title: 'PRODUCTION VERIFICATION · ÜRETİM DOĞRULAMA',
+    items: [
+      { id: 'artwork_approved',    en: 'Artwork approved / Baskı onaylandı' },
+      { id: 'fabric_colour',       en: 'Fabric colour approved / Kumaş rengi onaylandı' },
+      { id: 'barcode_placement',   en: 'Barcode placement verified / Barkod yerleşimi kontrol edildi' },
+      { id: 'printing_verified',   en: 'Printing placement verified / Baskı yerleşimi kontrol edildi' },
+      { id: 'packing_instr',       en: 'Packing instructions verified / Paketleme talimatı kontrol edildi' },
+    ],
+  },
+  {
+    id: 'finalaudit',
+    title: 'FINAL PACKING AUDIT · FİNAL PAKETLEME DENETİMİ',
+    items: [
+      { id: 'random_cartons',      en: 'Random cartons completed / Rastgele karton kontrolü tamamlandı' },
+      { id: 'carton_contents',     en: 'Carton contents verified / Karton içeriği doğrulandı' },
+      { id: 'carton_labels_po',    en: 'Carton labels match PO / Koli etiketleri PO ile eşleşiyor' },
+      { id: 'physical_style',      en: 'Physical style matches PO / Fiziksel ürün PO ile eşleşiyor' },
+      { id: 'cartons_completed',   en: 'Cartons completed properly / Koliler düzgün şekilde tamamlandı' },
+      { id: 'shipment_approved',   en: 'Shipment approved for dispatch / Yükleme gönderimine onaylandı' },
+    ],
+  },
+];
+
+const CHECKLIST_SIGNOFF_ROLES = [
+  { id: 'packingSupv',   label: 'Packing Supervisor · Paketleme Sorumlusu' },
+  { id: 'qcSupv',        label: 'QC Supervisor · QC Sorumlusu' },
+  { id: 'warehouseSupv', label: 'Warehouse Supervisor · Depo Sorumlusu' },
+];
+
+function newChecklist(customer, orderno) {
+  const now = new Date();
+  const p = n => String(n).padStart(2,'0');
+  const items = {};
+  CHECKLIST_SECTIONS.forEach(sec => sec.items.forEach(item => {
+    items[item.id] = { result: null, comments: '', checkedBy: '', date: '' };
+  }));
+  const signoffs = {};
+  CHECKLIST_SIGNOFF_ROLES.forEach(r => {
+    signoffs[r.id] = { name: '', date: '', signed: false };
+  });
+  return {
+    id: 'CHL-' + Date.now(),
+    createdAt: now.toISOString(),
+    customer, orderno,
+    header: { customer: customer, poNo: orderno, styleName: '', colour: '', shipmentDate: '' },
+    items,
+    signoffs,
+  };
+}
+
+function updateChecklist(fn) {
+  if (!state.currentChecklist) return;
+  fn(state.currentChecklist);
+  const idx = state.checklists.findIndex(c => c.id === state.currentChecklist.id);
+  if (idx >= 0) state.checklists[idx] = state.currentChecklist;
+  saveChecklists();
+}
+
+function openChecklist(id) {
+  const cl = state.checklists.find(c => c.id === id);
+  if (!cl) return;
+  state.currentChecklist = cl;
+  state.screen = 'checklist';
+  showHomeBtn();
+  renderChecklistForm();
+}
+
+function deleteChecklist(id) {
+  if (!confirm('Remove this checklist? Make sure you have saved the PDF first.')) return;
+  state.checklists = state.checklists.filter(c => c.id !== id);
+  saveChecklists();
+  showDashboard();
+}
+
+function startChecklist(customerEnc, ordernoEnc) {
+  const customer = decodeURIComponent(customerEnc);
+  const orderno  = decodeURIComponent(ordernoEnc);
+  const cl = newChecklist(customer, orderno);
+  // Pre-fill header from existing reports
+  const ref = state.reports.find(r => r.customer===customer && r.orderno===orderno)
+           || state.interimReports.find(r => r.customer===customer && r.orderno===orderno);
+  if (ref) {
+    cl.header.styleName = ref.styleno || ref.modelNo || '';
+    cl.header.colour    = ref.colour || '';
+    cl.header.shipmentDate = ref.shipdate || '';
+    cl.header.poNo = orderno;
+  }
+  state.checklists.push(cl);
+  saveChecklists();
+  state.currentChecklist = cl;
+  state.screen = 'checklist';
+  showHomeBtn();
+  renderChecklistForm();
+}
+
+function localDateTimeStr() {
+  const now = new Date(), p = n => String(n).padStart(2,'0');
+  return `${p(now.getDate())}/${p(now.getMonth()+1)}/${now.getFullYear()} ${p(now.getHours())}:${p(now.getMinutes())}`;
+}
+
+function renderChecklistForm() {
+  const cl = state.currentChecklist;
+  if (!cl) return;
+  const cp = loadChecklistPeople();
+  // Build combined name list from all signoff roles for "Checked By" dropdown
+  const allNames = [...new Set(
+    CHECKLIST_SIGNOFF_ROLES.flatMap(r => cp[r.id] || [])
+  )];
+  const nameOptsFor = (selected) =>
+    `<option value="">— Who —</option>` +
+    allNames.map(n => `<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
+
+  const inputStyle = 'width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;font-family:inherit;font-size:13px;color:var(--text);outline:none';
+  const selectStyle = 'width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;font-family:inherit;font-size:13px;color:#111;outline:none';
+
+  // Build each section as a full-width table
+  const sectionsHTML = CHECKLIST_SECTIONS.map(sec => {
+    const rowsHTML = sec.items.map(item => {
+      const entry = cl.items[item.id] || { result: null, comments: '', checkedBy: '', date: '' };
+      const isPass = entry.result === true;
+      const isFail = entry.result === false;
+      return `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:9px 12px;font-size:13px;color:var(--text);vertical-align:middle;min-width:200px">${item.en}</td>
+        <td style="padding:6px 8px;vertical-align:middle;white-space:nowrap;width:130px">
+          <div style="display:flex;gap:6px">
+            <button onclick="setChecklistItem('${item.id}',true)" style="flex:1;padding:5px 8px;border-radius:20px;border:1.5px solid ${isPass?'var(--pass)':'var(--border2)'};background:${isPass?'var(--pass-bg)':'transparent'};color:${isPass?'var(--pass)':'var(--muted)'};cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">✓ OK</button>
+            <button onclick="setChecklistItem('${item.id}',false)" style="flex:1;padding:5px 8px;border-radius:20px;border:1.5px solid ${isFail?'var(--fail)':'var(--border2)'};background:${isFail?'var(--fail-bg)':'transparent'};color:${isFail?'var(--fail)':'var(--muted)'};cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">✗</button>
+          </div>
+        </td>
+        <td style="padding:6px 8px;vertical-align:middle;width:160px">
+          <select onchange="updateChecklistItemField('${item.id}','checkedBy',this.value)" style="${selectStyle}">${nameOptsFor(entry.checkedBy)}</select>
+        </td>
+        <td style="padding:6px 8px;vertical-align:middle;width:120px;font-size:11px;color:var(--muted);white-space:nowrap">${entry.date||'—'}</td>
+        <td style="padding:6px 8px;vertical-align:middle">
+          <input placeholder="Comments · Yorumlar" value="${(entry.comments||'').replace(/"/g,'&quot;')}" oninput="updateChecklist(c=>c.items['${item.id}'].comments=this.value)" style="${inputStyle}">
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `
+    <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+      <div style="background:#A6A6A6;color:#000;padding:8px 14px;font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase">${sec.title}</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--surface)">
+            <th style="padding:7px 12px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:left;border-bottom:1px solid var(--border)">Control Point / Kontrol Noktası</th>
+            <th style="padding:7px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:left;border-bottom:1px solid var(--border);width:130px">Result / Sonuç</th>
+            <th style="padding:7px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:left;border-bottom:1px solid var(--border);width:160px">Checked By / Kontrol Eden</th>
+            <th style="padding:7px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:left;border-bottom:1px solid var(--border);width:120px">Date / Tarih</th>
+            <th style="padding:7px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;text-align:left;border-bottom:1px solid var(--border)">Comments / Açıklama</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  // Build sign-off section
+  const signoffsHTML = CHECKLIST_SIGNOFF_ROLES.map(role => {
+    const so = cl.signoffs[role.id] || { name: '', date: '', signed: false };
+    const names = cp[role.id] || [];
+    const opts = [`<option value="">— Select —</option>`, ...names.map(n => `<option value="${n}" ${n===so.name?'selected':''}>${n}</option>`)].join('');
+    return `
+    <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;background:var(--surface)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${role.label}</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+        <select onchange="updateChecklist(c=>c.signoffs['${role.id}'].name=this.value)" style="${selectStyle}">${opts}</select>
+        <button onclick="signOffChecklist('${role.id}')" style="padding:8px 16px;border-radius:var(--r-sm);border:none;background:${so.signed?'var(--pass-bg)':'var(--accent2)'};color:${so.signed?'var(--pass)':'#fff'};cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;white-space:nowrap">
+          ${so.signed ? '✓ Signed · '+so.date : 'Sign Off'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  render(`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="background:rgba(34,197,94,0.15);color:var(--pass);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">✅ Final Checklist</div>
+      <div style="font-size:13px;color:var(--muted)">${cl.customer} · ${cl.orderno}</div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:10px">Shipment Details · Yükleme Bilgileri</div>
+      <div class="grid-2">
+        <div class="field"><label>Customer · Müşteri</label><input value="${cl.header.customer||cl.customer||''}" oninput="updateChecklist(c=>c.header.customer=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>PO Number · PO Numarası</label><input value="${cl.header.poNo||''}" oninput="updateChecklist(c=>c.header.poNo=this.value)" style="${inputStyle}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Style Name / Model No</label><input value="${cl.header.styleName||''}" oninput="updateChecklist(c=>c.header.styleName=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>Colour · Renk</label><input value="${cl.header.colour||''}" oninput="updateChecklist(c=>c.header.colour=this.value)" style="${inputStyle}"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Shipment Date · Yükleme Tarihi</label><input value="${cl.header.shipmentDate||''}" oninput="updateChecklist(c=>c.header.shipmentDate=this.value)" style="${inputStyle}"></div>
+      </div>
+    </div>
+
+    ${sectionsHTML}
+
+    <!-- SIGN OFF -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:10px">QC & Packing Sign Off · İmzalar</div>
+      <div style="display:flex;flex-direction:column;gap:10px">${signoffsHTML}</div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px">To manage names in these lists, go to <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="showManagePeople()">👥 Manage People</button> → Final Checklist section.</p>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="bottom-nav">
+      <button class="btn btn-ghost" onclick="showDashboard()">← Back</button>
+      <button class="btn btn-primary" onclick="downloadChecklistPDF()">📥 Download PDF</button>
+    </div>
+  `);
+}
+
+function setChecklistItem(itemId, val) {
+  const cl = state.currentChecklist;
+  if (!cl) return;
+  updateChecklist(c => {
+    if (!c.items[itemId]) c.items[itemId] = { result: null, comments: '', checkedBy: '', date: '' };
+    // Toggle off if tapping same value again
+    c.items[itemId].result = (c.items[itemId].result === val) ? null : val;
+    if (c.items[itemId].result !== null) {
+      c.items[itemId].date = localDateTimeStr();
+    } else {
+      c.items[itemId].date = '';
+    }
+  });
+  renderChecklistForm();
+}
+
+function updateChecklistItemField(itemId, field, value) {
+  updateChecklist(c => {
+    if (!c.items[itemId]) c.items[itemId] = { result: null, comments: '', checkedBy: '', date: '' };
+    c.items[itemId][field] = value;
+  });
+}
+
+function signOffChecklist(roleId) {
+  const cl = state.currentChecklist;
+  if (!cl) return;
+  const so = cl.signoffs[roleId];
+  if (!so.name) { toast('Please select a name first'); return; }
+  if (so.signed) {
+    if (!confirm('Remove this sign-off?')) return;
+    updateChecklist(c => { c.signoffs[roleId].signed = false; c.signoffs[roleId].date = ''; });
+  } else {
+    updateChecklist(c => { c.signoffs[roleId].signed = true; c.signoffs[roleId].date = localDateTimeStr(); });
+  }
+  renderChecklistForm();
+}
+
+function buildChecklistPDF(cl) {
+  const logoSrc = typeof KOZAN_JPEG_LOGO !== 'undefined' ? KOZAN_JPEG_LOGO : '';
+  const logoHTML = logoSrc
+    ? `<img src="${logoSrc}" style="height:40px;width:auto;display:block">`
+    : `<div style="font-weight:900;border:2px solid #333;padding:3px 7px;font-size:14px;font-family:monospace">KT</div>`;
+
+  const sectionsHTML = CHECKLIST_SECTIONS.map(sec => {
+    const rows = sec.items.map(item => {
+      const e = cl.items[item.id] || {};
+      const r = e.result;
+      const checkColor = r === true ? '#15803d' : r === false ? '#dc2626' : '#999';
+      const checkMark  = r === true ? '✓' : r === false ? '✗' : '';
+      return `<tr>
+        <td style="font-size:8.5px;padding:4px 8px;border:1px solid #d4d4d4">${item.en}</td>
+        <td style="text-align:center;font-size:14px;font-weight:700;color:${checkColor};border:1px solid #d4d4d4;width:40px">${checkMark}</td>
+        <td style="font-size:8px;padding:4px 8px;border:1px solid #d4d4d4;color:#333;width:110px">${e.checkedBy||''}</td>
+        <td style="font-size:8px;padding:4px 8px;border:1px solid #d4d4d4;color:#555;width:90px;white-space:nowrap">${e.date||''}</td>
+        <td style="font-size:8px;padding:4px 8px;border:1px solid #d4d4d4;color:#111">${e.comments||''}</td>
+      </tr>`;
+    }).join('');
+    return `
+      <tr><td colspan="5" style="background:#A6A6A6;color:#000;font-size:8px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:4px 8px;border:1px solid #A6A6A6">${sec.title}</td></tr>
+      <tr style="background:#d4d4d4">
+        <th style="font-size:7.5px;padding:3px 8px;border:1px solid #bbb;text-align:left">Control Point / Kontrol Noktası</th>
+        <th style="font-size:7.5px;padding:3px 8px;border:1px solid #bbb;width:40px;text-align:center">Result / Sonuç</th>
+        <th style="font-size:7.5px;padding:3px 8px;border:1px solid #bbb;width:110px">Checked By / Kontrol Eden</th>
+        <th style="font-size:7.5px;padding:3px 8px;border:1px solid #bbb;width:90px">Date / Tarih</th>
+        <th style="font-size:7.5px;padding:3px 8px;border:1px solid #bbb">Comments / Açıklama</th>
+      </tr>
+      ${rows}`;
+  }).join('');
+
+  const signoffsHTML = CHECKLIST_SIGNOFF_ROLES.map(role => {
+    const so = cl.signoffs[role.id] || {};
+    return `
+    <td style="border:none;padding:6px 12px;border-right:1px solid #ccc;width:33%;vertical-align:top">
+      <div style="font-size:7px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:20px">${role.label}</div>
+      <div style="border-top:1.5px solid #111;padding-top:4px">
+        <div style="font-size:9px;font-weight:600">${so.name||'—'}</div>
+        <div style="font-size:7.5px;color:#666;margin-top:2px">${so.signed ? '✓ Signed · '+so.date : 'Not signed'}</div>
+      </div>
+    </td>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',Arial,sans-serif; font-size:8.5px; color:#111; background:#fff; }
+  table { border-collapse:collapse; width:100%; }
+  th { text-align:left; }
+  html, body { width:210mm; margin:0 auto; }
+  .pdf-page { width:210mm; padding:5mm; box-sizing:border-box; background:#fff; page-break-after:always; }
+  .pdf-page:last-child { page-break-after:auto; }
+  .info-cell { padding:3px 5px; }
+  .info-cell label { display:block; font-size:6.5px; color:#888; text-transform:uppercase; letter-spacing:0.04em; }
+  .info-cell span { font-size:8.5px; font-weight:600; }
+</style>
+</head><body>
+<div class="pdf-page">
+
+<!-- HEADER -->
+<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px 4px;background:#fff;border-bottom:1px solid #e5e7eb;margin-bottom:3px">
+  ${logoHTML}
+  <div style="text-align:center">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.05em;color:#374151">PACKAGING &amp; QC CONTROL CHECKLIST</div>
+    <div style="font-size:7.5px;color:#888">PAKETLEME &amp; QC KONTROL CHECKLİST</div>
+  </div>
+  <div style="text-align:right;font-size:8px;color:#555;line-height:1.8">
+    <div><b>TARİH:</b> ${new Date(cl.createdAt).toLocaleDateString('tr-TR')}</div>
+  </div>
+</div>
+
+<!-- ORDER INFO ROW — matches final report style -->
+<table style="margin-bottom:3px;border-collapse:collapse">
+  <tr>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Müşteri · Customer</label><span>${cl.header.customer||cl.customer||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>PO Number · PO Numarası</label><span>${cl.header.poNo||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Style Name / Model No</label><span>${cl.header.styleName||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Colour · Renk</label><span>${cl.header.colour||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Shipment Date · Yükleme Tarihi</label><span>${cl.header.shipmentDate||'—'}</span></div></td>
+  </tr>
+</table>
+
+<!-- CHECKLIST TABLE -->
+<table style="margin-bottom:3px">
+  ${sectionsHTML}
+</table>
+
+<!-- SIGN OFF -->
+<div style="background:#A6A6A6;color:#000;font-size:8px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;padding:3px 6px;margin-bottom:0">QC & PACKING SIGN OFF · QC & PAKETLEME ONAYI</div>
+<table style="border:none">
+  <tr>${signoffsHTML}</tr>
+</table>
+
+</div>
+</body></html>`;
+}
+
+function downloadChecklistPDF() {
+  const cl = state.currentChecklist;
+  if (!cl) return;
+  const html = buildChecklistPDF(cl);
+  const brand = (cl.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
+  const po    = (cl.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
+  _triggerPDFDownload(html, `${brand}_${po}_Checklist.pdf`, 5);
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // ORDER HUB  —  all reports for a given Brand + PO
 // ══════════════════════════════════════════════════════════════════════
 
@@ -1234,12 +1667,15 @@ function openOrderHub(customerEnc, ordernoEnc) {
 
   const finals   = state.reports.filter(r => r.customer === customer && r.orderno === orderno);
   const interims = state.interimReports.filter(r => r.customer === customer && r.orderno === orderno);
+  const checks   = state.checklists.filter(c => c.customer === customer && c.orderno === orderno);
   const ref = finals[0] || interims[0];
 
   const MAX_INTERIM = 3;
   const MAX_FINAL = 3;
-  const canAddInterim = interims.length < MAX_INTERIM;
-  const canAddFinal = finals.length < MAX_FINAL;
+  const MAX_CHECKLIST = 1;
+  const canAddInterim   = interims.length < MAX_INTERIM;
+  const canAddFinal     = finals.length < MAX_FINAL;
+  const canAddChecklist = checks.length < MAX_CHECKLIST;
 
   render(`
     <div style="margin-bottom:18px">
@@ -1252,7 +1688,7 @@ function openOrderHub(customerEnc, ordernoEnc) {
     <div class="report-type-card interim ${canAddInterim?'':'disabled'}" onclick="${canAddInterim?`startInterimReport('${customerEnc}','${ordernoEnc}')`:''}" style="${canAddInterim?'':'opacity:0.5;cursor:not-allowed'}">
       <div class="rtc-icon">⚡</div>
       <div class="rtc-body">
-        <h3>Interim Control Report · Ara Kontrol Raporu</h3>
+        <h3>Ara Kontrol Raporu · Interim Control Report</h3>
         <p>Mid-production quality check. Records packaging, criteria findings, and signatures.<br><span style="color:var(--accent2);font-weight:600">${interims.length}/${MAX_INTERIM} used</span>${!canAddInterim?' — <span style="color:var(--fail)">Maximum reached</span>':''}</p>
       </div>
     </div>
@@ -1263,18 +1699,25 @@ function openOrderHub(customerEnc, ordernoEnc) {
         <p>Full AQL inspection with defect logging, AQL limits, photos, and pass/fail result.<br><span style="color:var(--accent2);font-weight:600">${finals.length}/${MAX_FINAL} used</span>${!canAddFinal?' — <span style="color:var(--fail)">Maximum reached</span>':''}</p>
       </div>
     </div>
+    <div class="report-type-card ${canAddChecklist?'':'disabled'}" onclick="${canAddChecklist?`startChecklist('${customerEnc}','${ordernoEnc}')`:''}" style="border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;display:flex;align-items:center;gap:12px;margin-bottom:8px;transition:border-color 0.15s;${canAddChecklist?'':'opacity:0.5;cursor:not-allowed'}">
+      <div class="rtc-icon" style="background:rgba(34,197,94,0.12);color:var(--pass);font-size:18px">✅</div>
+      <div class="rtc-body">
+        <h3>Final Checklist · Son Kontrol Listesi</h3>
+        <p>Packaging, production &amp; QC sign-off checklist.<br><span style="color:var(--accent2);font-weight:600">${checks.length}/${MAX_CHECKLIST} used</span>${!canAddChecklist?' — <span style="color:var(--fail)">Already created</span>':''}</p>
+      </div>
+    </div>
 
     ${interims.length ? `
-    <div class="card-title" style="margin:18px 0 10px">⚡ Interim Reports (${interims.length})</div>
+    <div class="card-title" style="margin:18px 0 10px">⚡ Ara Kontrol Raporları (${interims.length})</div>
     ${interims.slice().reverse().map(ir => {
       const d = ir.createdAt ? new Date(ir.createdAt).toLocaleDateString() : '—';
       return `<div class="report-card" onclick="openInterim('${ir.id}')">
         <div class="rc-left">
-          <h3>Interim #${ir.interimNo||1} &nbsp;·&nbsp; ${d}</h3>
+          <h3>Ara Kontrol #${ir.interimNo||1} &nbsp;·&nbsp; ${d}</h3>
           <p>${ir.modelNo||ir.styleno||'—'} · Size: ${ir.size||'—'} · ${ir.qcName||ir.supervisorName||'—'}</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="badge badge-interim">Interim</span>
+          <span class="badge badge-interim">Ara Kontrol</span>
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteInterim('${ir.id}')">✕</button>
         </div>
       </div>`;
@@ -1296,6 +1739,24 @@ function openOrderHub(customerEnc, ordernoEnc) {
         <div style="display:flex;align-items:center;gap:8px">
           ${badge}
           <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteReport('${r.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('')}` : ''}
+
+    ${checks.length ? `
+    <div class="card-title" style="margin:18px 0 10px">✅ Final Checklist</div>
+    ${checks.map(c => {
+      const total = Object.values(c.items||{}).length;
+      const done  = Object.values(c.items||{}).filter(v => v.result !== null).length;
+      const signed = CHECKLIST_SIGNOFF_ROLES.filter(r => c.signoffs?.[r.id]?.signed).length;
+      return `<div class="report-card" onclick="openChecklist('${c.id}')">
+        <div class="rc-left">
+          <h3>Checklist · ${new Date(c.createdAt).toLocaleDateString()}</h3>
+          <p>${done}/${total} items checked · ${signed}/${CHECKLIST_SIGNOFF_ROLES.length} signed off</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge" style="background:rgba(34,197,94,0.12);color:var(--pass)">✅ Checklist</span>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteChecklist('${c.id}')">✕</button>
         </div>
       </div>`;
     }).join('')}` : ''}
@@ -1364,6 +1825,7 @@ function startInterimReport(customerEnc, ordernoEnc) {
   if (ref) {
     ir.supplier = ref.supplier || ir.supplier;
     ir.modelNo  = ref.styleno || ref.modelNo || '';
+    ir.styleno  = ir.modelNo;
     ir.colour   = ref.colour || '';
   }
   state.interimReports.push(ir);
@@ -1378,7 +1840,9 @@ function openInterim(id) {
   const ir = state.interimReports.find(r => r.id === id);
   if (!ir) return;
   state.currentInterim = ir;
-  downloadInterimPDF();
+  state.screen = 'interim';
+  showHomeBtn();
+  renderInterimForm();
 }
 
 function deleteInterim(id) {
@@ -1430,37 +1894,38 @@ function renderInterimForm() {
   const ir = state.currentInterim;
   if (!ir) return;
   const p = loadPeople();
-  const qcOpts = [`<option value="">— Select —</option>`, ...(p.qc||[]).map(n=>`<option value="${n}" ${n===ir.qcName?'selected':''}>${n}</option>`)].join('');
-  const supOpts = [`<option value="">— Select —</option>`, ...(p.supplier||[]).map(n=>`<option value="${n}" ${n===ir.supervisorName?'selected':''}>${n}</option>`)].join('');
+  const ip = loadInterimPeople();
+  // Interim dropdowns use ONLY the interim-specific people lists
+  const interimQcList = ip.qc || [];
+  const interimSupList = ip.supervisor || [];
+  const qcOpts = [`<option value="">— Select —</option>`, ...interimQcList.map(n=>`<option value="${n}" ${n===ir.qcName?'selected':''}>${n}</option>`)].join('');
+  const supOpts = [`<option value="">— Select —</option>`, ...interimSupList.map(n=>`<option value="${n}" ${n===ir.supervisorName?'selected':''}>${n}</option>`)].join('');
 
   const inputStyle = 'width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none';
-  const taStyle = `${inputStyle};resize:vertical;min-height:48px;font-size:13px;`;
+  const taStyle = `${inputStyle};resize:vertical;min-height:80px;font-size:14px;`;
   const labelStyle = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px;display:block';
 
-  // Packaging check rows
+  // Packaging as text input rows — bigger textareas
   const pkgRows = INTERIM_PKG_ITEMS.map(item => `
     <tr>
-      <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px">${item.en}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap">
-        <div style="display:flex;gap:6px;justify-content:center">
-          <button class="check-btn ${ir.pkg[item.key]===true?'ok':''}" onclick="setInterimPkg('${item.key}',true)" style="min-width:36px">✓</button>
-          <button class="check-btn ${ir.pkg[item.key]===false?'issue':''}" onclick="setInterimPkg('${item.key}',false)" style="min-width:36px">✗</button>
-        </div>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);vertical-align:top;padding-top:12px;min-width:180px">${item.en}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">
+        <textarea style="${taStyle};min-height:72px;" oninput="updateInterim(r=>r.pkg['${item.key}']=this.value)" placeholder="Observations...">${ir.pkg[item.key]||''}</textarea>
       </td>
     </tr>`).join('');
 
-  // Control criteria as labelled textareas
+  // Control criteria as labelled textareas — bigger
   const ctrlRows = INTERIM_CTRL_ITEMS.map(item => `
     <tr>
-      <td style="padding:6px 10px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);vertical-align:top;padding-top:10px;min-width:160px">${item.en}</td>
-      <td style="padding:4px 6px;border-bottom:1px solid var(--border)">
-        <textarea style="${taStyle}" oninput="updateInterim(r=>r.findings['${item.key}']=this.value)" placeholder="Observations...">${ir.findings[item.key]||''}</textarea>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);vertical-align:top;padding-top:12px;min-width:180px">${item.en}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid var(--border)">
+        <textarea style="${taStyle};min-height:72px;" oninput="updateInterim(r=>r.findings['${item.key}']=this.value)" placeholder="Observations...">${ir.findings[item.key]||''}</textarea>
       </td>
     </tr>`).join('');
 
   render(`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <div style="background:rgba(139,92,246,0.15);color:#a78bfa;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">⚡ Interim Report #${ir.interimNo}</div>
+      <div style="background:rgba(139,92,246,0.15);color:#a78bfa;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">⚡ Ara Kontrol #${ir.interimNo}</div>
       <div style="font-size:13px;color:var(--muted)">${ir.customer} · ${ir.orderno}</div>
     </div>
 
@@ -1473,7 +1938,7 @@ function renderInterimForm() {
       </div>
       <div class="grid-2">
         <div class="field"><label>Sipariş No · Order No</label><input value="${ir.orderno||''}" readonly style="opacity:0.6;cursor:not-allowed;${inputStyle}"></div>
-        <div class="field"><label>Model Adı · Model Name</label><input value="${ir.modelNo||''}" oninput="updateInterim(r=>r.modelNo=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>Model Kodu · Style No</label><input value="${ir.styleno||ir.modelNo||''}" oninput="updateInterim(r=>{r.styleno=this.value;r.modelNo=this.value;})" style="${inputStyle}" placeholder="e.g. VARSITY-001"></div>
       </div>
       <div class="field"><label>Model / Kumaş Tanımı · Fabric Description</label><input value="${ir.fabricDesc||''}" oninput="updateInterim(r=>r.fabricDesc=this.value)" style="${inputStyle}" placeholder="e.g. %100 Organic Cotton Sweatshirt"></div>
       <div class="grid-3">
@@ -1488,26 +1953,20 @@ function renderInterimForm() {
       </div>
     </div>
 
-    <!-- TWO COLUMN: Packaging left, Control Criteria right -->
-    <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;margin-bottom:12px">
+    <!-- PAKETLEME — full width row -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:8px">📦 Paketleme · Packaging</div>
+      <table style="width:100%;border-collapse:collapse">
+        ${pkgRows}
+      </table>
+    </div>
 
-      <!-- LEFT: PAKETLEME -->
-      <div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:8px">📦 Paketleme · Packaging</div>
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">İMALAT KONTROL KRİTİKLERİ</div>
-        <table style="width:100%;border-collapse:collapse">
-          ${pkgRows}
-        </table>
-      </div>
-
-      <!-- RIGHT: KONTROL YERLERİ as textboxes -->
-      <div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:8px">🔍 Kontrol Yerleri · Control Criteria</div>
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)">İMALAT KONTROL KRİTİKLERİ</div>
-        <table style="width:100%;border-collapse:collapse">
-          ${ctrlRows}
-        </table>
-      </div>
+    <!-- KONTROL YERLERİ — full width row below -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:8px">🔍 Kontrol Yerleri · Control Criteria</div>
+      <table style="width:100%;border-collapse:collapse">
+        ${ctrlRows}
+      </table>
     </div>
 
     <!-- GENEL GÖRÜNÜM -->
@@ -1516,16 +1975,56 @@ function renderInterimForm() {
       <textarea style="${taStyle};min-height:80px" oninput="updateInterim(r=>r.generalObservation=this.value)" placeholder="Yukarıdaki kritikleri dikkate alarak genel durumu yazın...">${ir.generalObservation||''}</textarea>
     </div>
 
+    <!-- AÇIKLAMA -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:8px">Açıklama · Description / Notes</div>
+      <textarea style="${taStyle};min-height:80px" oninput="updateInterim(r=>r.aciklama=this.value)" placeholder="Ek açıklamalar, özel notlar...">${ir.aciklama||''}</textarea>
+    </div>
+
     <!-- SIGNATURES -->
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px">İmzalayanlar · Signatories</div>
       <div class="grid-2">
-        <div class="field"><label>Sorumlu · Supervisor</label>
+        <div class="field">
+          <label>Sorumlu · Supervisor</label>
           <select style="width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:#111;outline:none" onchange="updateInterim(r=>r.supervisorName=this.value)">${supOpts}</select>
         </div>
-        <div class="field"><label>Kalite Kontrolcü · QC Name</label>
+        <div class="field">
+          <label>Kalite Kontrolcü · QC Name</label>
           <select style="width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:#111;outline:none" onchange="updateInterim(r=>r.qcName=this.value)">${qcOpts}</select>
         </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:8px">To add names to these lists, go to <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="showManagePeople()">👥 Manage People</button> and use the <b>Ara Kontrol Raporu</b> section.</p>
+    </div>
+
+    <!-- PHOTOS -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:8px">📸 Fotoğraflar · Photos</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Photos will appear on page 2 of the PDF.</p>
+      <div class="camera-preview" id="interim-camera-wrap" style="display:none">
+        <video id="interim-camera-video" autoplay playsinline muted></video>
+        <div class="camera-overlay"></div>
+        <canvas id="interim-snap-canvas" style="display:none"></canvas>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+        <button class="btn btn-primary" id="interim-cam-btn" onclick="toggleInterimCamera()" style="flex:1">📷 Open Camera</button>
+        <label class="btn btn-ghost" style="flex:1;cursor:pointer;text-align:center">
+          📁 Upload Photos
+          <input type="file" accept="image/*" multiple style="display:none" onchange="addInterimPhotos(this)">
+        </label>
+      </div>
+      <button id="interim-shutter" onclick="takeInterimPhoto()" style="display:none;width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid var(--accent);cursor:pointer;margin:0 auto 10px;display:none;transition:transform 0.1s"></button>
+      <div class="photo-grid" id="interim-photo-grid">
+        ${(ir.photos||[]).map((p,i)=>`
+          <div class="photo-thumb">
+            <img src="${p.url||p}" onerror="this.style.display='none'">
+            <button class="pt-del" onclick="deleteInterimPhoto(${i})">✕</button>
+          </div>`).join('')}
+        <label style="aspect-ratio:1;border-radius:var(--r-sm);border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:4px;color:var(--muted);font-size:12px">
+          <span style="font-size:24px">+</span>
+          <span>Add Photo</span>
+          <input type="file" accept="image/*" multiple style="display:none" onchange="addInterimPhotos(this)">
+        </label>
       </div>
     </div>
 
@@ -1550,235 +2049,361 @@ function setInterimPkg(key, val) {
   });
 }
 
+
+
+async function addInterimPhotos(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  for (const file of files) {
+    const reader = new FileReader();
+    await new Promise(resolve => {
+      reader.onload = async e => {
+        const compressed = await compressImage(e.target.result);
+        updateInterim(r => {
+          if (!r.photos) r.photos = [];
+          r.photos.push({ url: compressed });
+        });
+        resolve();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  _refreshInterimPhotoGrid();
+  toast(`📸 ${files.length} photo(s) added`);
+}
+
+function deleteInterimPhoto(idx) {
+  updateInterim(r => { if (r.photos) r.photos.splice(idx, 1); });
+  _refreshInterimPhotoGrid();
+}
+
+// ── INTERIM CAMERA ───────────────────────────────────────────────────
+let _interimCamOpen = false;
+
+async function toggleInterimCamera() {
+  if (_interimCamOpen) {
+    stopInterimCamera();
+    return;
+  }
+  const wrap = qs('#interim-camera-wrap');
+  const btn  = qs('#interim-cam-btn');
+  const shutter = qs('#interim-shutter');
+  if (!wrap) return;
+
+  try {
+    // Always request a fresh stream — permission is already granted after first time
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    state.cameraStream = stream;
+    const video = qs('#interim-camera-video');
+    if (video) video.srcObject = stream;
+    wrap.style.display = '';
+    if (shutter) { shutter.style.display = 'block'; shutter.style.margin = '0 auto 10px'; }
+    if (btn) btn.textContent = '✕ Close Camera';
+    _interimCamOpen = true;
+  } catch(_) {
+    wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px">Camera not available.<br>Please upload photos from your device.</div>`;
+    wrap.style.display = '';
+  }
+}
+
+function stopInterimCamera() {
+  // Fully stop the camera stream and turn off the indicator light
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach(t => t.stop());
+    state.cameraStream = null;
+  }
+  const video = qs('#interim-camera-video');
+  if (video) { video.pause(); video.srcObject = null; }
+  const wrap = qs('#interim-camera-wrap');
+  const btn  = qs('#interim-cam-btn');
+  const shutter = qs('#interim-shutter');
+  if (wrap) wrap.style.display = 'none';
+  if (shutter) shutter.style.display = 'none';
+  if (btn) btn.textContent = '📷 Open Camera';
+  _interimCamOpen = false;
+}
+
+function takeInterimPhoto() {
+  const video = qs('#interim-camera-video');
+  const canvas = qs('#interim-snap-canvas');
+  if (!video || !canvas) return;
+  let w = video.videoWidth || 640, h = video.videoHeight || 480;
+  if (w > PHOTO_MAX_DIM || h > PHOTO_MAX_DIM) {
+    if (w > h) { h = Math.round(h * PHOTO_MAX_DIM / w); w = PHOTO_MAX_DIM; }
+    else        { w = Math.round(w * PHOTO_MAX_DIM / h); h = PHOTO_MAX_DIM; }
+  }
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+  const url = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+  // Stop camera immediately after taking the photo
+  stopInterimCamera();
+  compressImage(url).then(compressed => {
+    updateInterim(r => {
+      if (!r.photos) r.photos = [];
+      r.photos.push({ url: compressed });
+    });
+    _refreshInterimPhotoGrid();
+    toast('📸 Photo saved');
+  });
+}
+
+function _refreshInterimPhotoGrid() {
+  const ir = state.currentInterim;
+  const grid = qs('#interim-photo-grid');
+  if (!grid || !ir) return;
+  grid.innerHTML = (ir.photos||[]).map((p,i)=>`
+    <div class="photo-thumb">
+      <img src="${p.url||p}" onerror="this.style.display='none'">
+      <button class="pt-del" onclick="deleteInterimPhoto(${i})">✕</button>
+    </div>`).join('') +
+  `<label style="aspect-ratio:1;border-radius:var(--r-sm);border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:4px;color:var(--muted);font-size:12px">
+    <span style="font-size:24px">+</span>
+    <span>Add Photo</span>
+    <input type="file" accept="image/*" multiple style="display:none" onchange="addInterimPhotos(this)">
+  </label>`;
+}
+
+
 function buildInterimReportHTML(ir) {
   const logoSrc = typeof KOZAN_JPEG_LOGO !== 'undefined' ? KOZAN_JPEG_LOGO : '';
   const logoHTML = logoSrc
-    ? `<img src="${logoSrc}" style="height:42px;width:auto;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact">`
+    ? `<img src="${logoSrc}" style="height:40px;width:auto;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact">`
     : `<div style="font-size:14px;font-weight:900;border:2px solid #333;padding:3px 7px;font-family:monospace">KT</div>`;
 
   const pkgRowsHTML = INTERIM_PKG_ITEMS.map(item => {
-    const val = ir.pkg[item.key];
-    const check = val===true ? '✓' : (val===false ? '✗' : '');
-    const checkColor = val===true ? '#15803d' : val===false ? '#dc2626' : '#ccc';
+    const val = ir.pkg[item.key] || '';
     return `<tr>
-      <td style="padding:5px 10px;font-size:9.5px;border-bottom:1px solid #eee;line-height:1.4">${item.en}</td>
-      <td style="text-align:center;font-size:15px;font-weight:700;color:${checkColor};border-bottom:1px solid #eee;width:36px;border-left:1px solid #eee">${check}</td>
+      <td style="font-size:8px;padding:3px 5px;border:1px solid #ccc;width:35%">${item.en}</td>
+      <td style="font-size:8.5px;padding:3px 5px;border:1px solid #ccc;color:#111">${val || '<span style="color:#ccc">—</span>'}</td>
     </tr>`;
   }).join('');
 
   const ctrlRowsHTML = INTERIM_CTRL_ITEMS.map(item => {
     const finding = ir.findings[item.key] || '';
     return `<tr>
-      <td style="padding:5px 10px;font-size:9px;color:#666;border-bottom:1px solid #eee;width:36%;vertical-align:top;white-space:nowrap">${item.en}</td>
-      <td style="padding:5px 10px;font-size:9.5px;border-bottom:1px solid #eee;color:#111;line-height:1.4">${finding || '<span style="color:#bbb">—</span>'}</td>
+      <td style="font-size:8px;padding:3px 5px;border:1px solid #ccc;width:35%">${item.en}</td>
+      <td style="font-size:8.5px;padding:3px 5px;border:1px solid #ccc;color:#111;line-height:1.4">${finding || '<span style="color:#ccc">—</span>'}</td>
     </tr>`;
   }).join('');
 
-  return `<div style="width:200mm;margin:auto;background:#fff;font-family:'DM Sans','Arial',sans-serif;color:#111;border:1px solid #ccc;font-size:9.5px">
+  const photos = ir.photos || [];
+  // Build rows of 2 so we can apply page-break-inside:avoid per row
+  const photoRows = [];
+  for (let i = 0; i < photos.length; i += 2) {
+    photoRows.push(photos.slice(i, i + 2));
+  }
+  const photoGridHTML = photos.length
+    ? photoRows.map(row => `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        ${row.map(p => `
+          <div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;align-items:center;justify-content:center;min-height:120px">
+            <img src="${p.url||p}" style="max-width:100%;max-height:240px;width:auto;height:auto;display:block">
+          </div>`).join('')}
+        ${row.length === 1 ? `<div></div>` : ''}
+      </div>`).join('')
+    : `<div style="color:#bbb;font-size:10px;text-align:center;padding:40px 0">No photos added</div>`;
 
-    <!-- ═══ HEADER — white background ═══ -->
-    <div style="background:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #ccc">
-      <div style="display:flex;align-items:center;gap:8px;min-width:120px">
-        ${logoHTML}
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:17px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#111">ARA KONTROL RAPORU</div>
-        <div style="font-size:8.5px;color:#888;margin-top:2px;letter-spacing:0.04em">Interim Control Report &nbsp;·&nbsp; #${ir.interimNo}</div>
-      </div>
-      <div style="text-align:right;font-size:9px;line-height:2;min-width:120px">
-        <div><b>TARİH:</b> ${ir.date||'—'}</div>
-        <div><b>SAAT &nbsp;:</b> ${ir.time||'—'}</div>
-      </div>
-    </div>
+  const styleno = ir.styleno || ir.modelNo || '—';
 
-    <!-- ═══ ORDER INFO ═══ -->
-    <table style="width:100%;border-collapse:collapse">
-      <tr>
-        <td style="padding:5px 10px;border:1px solid #eee;width:25%">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Müşteri · Customer</div>
-          <div style="font-size:10px;font-weight:700;margin-top:2px">${ir.customer||'—'}</div>
-        </td>
-        <td style="padding:5px 10px;border:1px solid #eee;width:25%">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">İmalatçı · Manufacturer</div>
-          <div style="font-size:10px;font-weight:700;margin-top:2px">${ir.supplier||'KOZAN'}</div>
-        </td>
-        <td style="padding:5px 10px;border:1px solid #eee;width:50%">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Sipariş No · Order No</div>
-          <div style="font-size:10px;font-weight:700;margin-top:2px">${ir.orderno||'—'}</div>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:5px 10px;border:1px solid #eee" colspan="2">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Model Adı · Model Name</div>
-          <div style="font-size:9.5px;font-weight:600;margin-top:2px">${ir.modelNo||'—'}</div>
-        </td>
-        <td style="padding:5px 10px;border:1px solid #eee">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Model / Kumaş Tanımı · Fabric Description</div>
-          <div style="font-size:9px;margin-top:2px">${ir.fabricDesc||'—'}</div>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:5px 10px;border:1px solid #eee">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Renk · Colour</div>
-          <div style="font-size:9.5px;margin-top:2px">${ir.colour||'—'}</div>
-        </td>
-        <td style="padding:5px 10px;border:1px solid #eee">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Beden · Size</div>
-          <div style="font-size:9.5px;font-weight:600;margin-top:2px">${ir.size||'—'}</div>
-        </td>
-        <td style="padding:5px 10px;border:1px solid #eee">
-          <div style="font-size:6.5px;color:#999;text-transform:uppercase;letter-spacing:0.06em">Adet · Qty</div>
-          <div style="font-size:9.5px;font-weight:600;margin-top:2px">${ir.qty||'—'}</div>
-        </td>
-      </tr>
-    </table>
+  return `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',Arial,sans-serif; font-size:8.5px; color:#111; background:#fff; }
+  table { border-collapse:collapse; width:100%; table-layout:fixed; }
+  td,th { border:1px solid #ccc; vertical-align:top; padding:0; overflow:hidden; word-break:break-word; }
+  .section-bar { background:#A6A6A6; color:#000; font-size:8px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:3px 6px; }
+  .info-cell { padding:3px 5px; }
+  .info-cell label { display:block; font-size:6.5px; color:#888; text-transform:uppercase; letter-spacing:0.04em; }
+  .info-cell span { font-size:8.5px; font-weight:500; }
+  th { background:#d4d4d4; font-size:7.5px; padding:2px 4px; text-align:left; }
+  html, body { width:210mm; margin:0 auto; padding:0; }
+  .pdf-page {
+    width:210mm; padding:5mm; box-sizing:border-box; background:#fff;
+    page-break-after:always; break-after:page;
+    display:flex; flex-direction:column; min-height:277mm;
+  }
+  .pdf-page:last-child { page-break-after:auto; break-after:auto; }
+  .page-body { flex:1; }
+  .page-footer { margin-top:auto; padding-top:4px; }
+</style>
+</head><body>
+<div class="pdf-page">
+<div class="page-body">
 
-    <!-- ═══ ARA KONTROL #N — big section label ═══ -->
-    <div style="background:#e8e8e8;padding:7px 10px;border-top:2px solid #bbb;border-bottom:1px solid #ccc">
-      <div style="font-size:13px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#111">ARA KONTROL ${ir.interimNo}</div>
-      <div style="font-size:7.5px;color:#666;margin-top:1px;letter-spacing:0.06em;text-transform:uppercase">İmalat Kontrol Kritikleri · Manufacturing Control Criteria</div>
-    </div>
+<!-- HEADER -->
+<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px 4px;background:#fff;border-bottom:1px solid #e5e7eb;margin-bottom:2px">
+  ${logoHTML}
+  <div style="text-align:center">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.05em;color:#374151">ARA KONTROL RAPORU</div>
+    <div style="font-size:7.5px;color:#888;letter-spacing:0.03em">Interim Control Report · #${ir.interimNo}</div>
+  </div>
+  <div style="text-align:right;font-size:8px;color:#555;line-height:1.8">
+    <div><b>TARİH:</b> ${ir.date||'—'}</div>
+    <div><b>SAAT:</b> ${ir.time||'—'}</div>
+  </div>
+</div>
 
-    <!-- ═══ PAKETLEME — full width ═══ -->
-    <div style="border-bottom:1px solid #ccc">
-      <div style="background:#f2f2f2;font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;border-bottom:1px solid #ddd;color:#333">
-        PAKETLEME · PACKAGING
-      </div>
-      <table style="width:100%;border-collapse:collapse">
-        ${pkgRowsHTML}
-      </table>
-    </div>
+<!-- ORDER INFO -->
+<table style="margin-bottom:2px">
+  <tr>
+    <td style="width:22%"><div class="info-cell"><label>Müşteri · Customer</label><span>${ir.customer||'—'}</span></div></td>
+    <td style="width:22%"><div class="info-cell"><label>İmalatçı · Manufacturer</label><span>${ir.supplier||'KOZAN'}</span></div></td>
+    <td style="width:22%"><div class="info-cell"><label>Sipariş No · Order No</label><span>${ir.orderno||'—'}</span></div></td>
+    <td style="width:34%"><div class="info-cell"><label>Kumaş · Fabric Desc.</label><span>${ir.fabricDesc||'—'}</span></div></td>
+  </tr>
+  <tr>
+    <td><div class="info-cell"><label>Renk · Colour</label><span>${ir.colour||'—'}</span></div></td>
+    <td><div class="info-cell"><label>Model Kodu · Style No</label><span>${styleno}</span></div></td>
+    <td><div class="info-cell"><label>Beden · Size</label><span>${ir.size||'—'}</span></div></td>
+    <td><div class="info-cell"><label>Adet · Qty &nbsp;&nbsp;&nbsp; Kontrol No · #</label><span>${ir.qty||'—'} &nbsp;&nbsp;&nbsp; #${ir.interimNo}</span></div></td>
+  </tr>
+</table>
 
-    <!-- ═══ KONTROL YERLERİ — full width ═══ -->
-    <div style="border-bottom:1px solid #ccc">
-      <div style="background:#f2f2f2;font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;border-bottom:1px solid #ddd;color:#333">
-        KONTROL YERLERİ · CONTROL CRITERIA
-      </div>
-      <table style="width:100%;border-collapse:collapse">
-        ${ctrlRowsHTML}
-      </table>
-    </div>
+<div class="section-bar" style="margin-bottom:2px;text-align:center">ARA KONTROL ${ir.interimNo} · İmalat Kontrol Kritikleri · Manufacturing Control Criteria</div>
 
-    <!-- ═══ GENEL GÖRÜNÜM (AÇIKLAMA) ═══ -->
-    <div style="border-bottom:1px solid #ccc">
-      <div style="background:#f2f2f2;font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;border-bottom:1px solid #ddd;color:#333">
-        GENEL GÖRÜNÜM · AÇIKLAMA · GENERAL OBSERVATION
-      </div>
-      <div style="min-height:65px;padding:8px 10px;font-size:9.5px;white-space:pre-wrap;line-height:1.6;color:${ir.generalObservation?'#111':'#bbb'}">${ir.generalObservation||'—'}</div>
-    </div>
+<!-- PAKETLEME — full width -->
+<div class="section-bar" style="margin-bottom:0">PAKETLEME · PACKAGING</div>
+<table style="margin-bottom:2px">
+  <tr><th style="width:35%">Item · Ürün</th><th>Observation · Gözlem</th></tr>
+  ${pkgRowsHTML}
+</table>
 
-    <!-- ═══ SIGNATURES ═══ -->
-    <table style="width:100%;border-collapse:collapse">
-      <tr>
-        <td style="padding:10px 14px;border-right:1px solid #ddd;width:50%;vertical-align:top">
-          <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:28px">Sorumlu · Supervisor</div>
-          <div style="border-top:1.5px solid #333;padding-top:4px;display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:9.5px;font-weight:600">${ir.supervisorName||''}</div>
-            <div style="font-size:7px;color:#aaa">İmza</div>
-          </div>
-        </td>
-        <td style="padding:10px 14px;width:50%;vertical-align:top">
-          <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:28px">Kalite Kontrolcü · QC</div>
-          <div style="border-top:1.5px solid #333;padding-top:4px;display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:9.5px;font-weight:600">${ir.qcName||''}</div>
-            <div style="font-size:7px;color:#aaa">İmza</div>
-          </div>
-        </td>
-      </tr>
-    </table>
+<!-- KONTROL YERLERİ — full width, below -->
+<div class="section-bar" style="margin-bottom:0">KONTROL YERLERİ · CONTROL CRITERIA</div>
+<table style="margin-bottom:2px">
+  <tr><th style="width:35%">Criteria · Kriter</th><th>Observation · Gözlem</th></tr>
+  ${ctrlRowsHTML}
+</table>
 
-  </div>`;
+<!-- GENEL GÖRÜNÜM -->
+<div class="section-bar" style="margin-bottom:0">GENEL GÖRÜNÜM · GENERAL OBSERVATION</div>
+<table style="margin-bottom:2px">
+  <tr><td style="padding:4px 6px;min-height:30px;font-size:8.5px;line-height:1.5;color:${ir.generalObservation?'#111':'#ccc'}">${ir.generalObservation||'—'}</td></tr>
+</table>
+
+<!-- AÇIKLAMA -->
+<div class="section-bar" style="margin-bottom:0">AÇIKLAMA · DESCRIPTION / NOTES</div>
+<table style="margin-bottom:2px">
+  <tr><td style="padding:4px 6px;min-height:28px;font-size:8.5px;line-height:1.5;color:${ir.aciklama?'#111':'#ccc'}">${ir.aciklama||'—'}</td></tr>
+</table>
+
+</div><!-- end page-body -->
+
+<!-- SIGNATURES — always at bottom of page 1 -->
+<div class="page-footer">
+  <div class="section-bar" style="margin-bottom:0">SIGNATURES · İmzalar</div>
+  <table style="border:none">
+    <tr>
+      <td style="border:none;padding:6px 10px;border-right:1px solid #ccc;width:50%">
+        <div style="border-top:1.5px solid #111;padding-top:3px;margin-top:18px">
+          <div style="font-size:7px;color:#888;text-transform:uppercase">Sorumlu · Supervisor</div>
+          <div style="font-size:9px;font-weight:500;margin-top:2px">${ir.supervisorName||'—'}</div>
+        </div>
+      </td>
+      <td style="border:none;padding:6px 10px;width:50%">
+        <div style="border-top:1.5px solid #111;padding-top:3px;margin-top:18px">
+          <div style="font-size:7px;color:#888;text-transform:uppercase">Kalite Kontrolcü · QC</div>
+          <div style="font-size:9px;font-weight:500;margin-top:2px">${ir.qcName||'—'}</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+</div><!-- end page 1 -->
+
+<!-- PAGE 2: PHOTOS — always a separate page -->
+<div class="pdf-page" style="page-break-inside:avoid">
+  <div class="section-bar" style="margin-bottom:8px">FOTOĞRAFLAR · PHOTOS (${photos.length})</div>
+  ${photoGridHTML}
+</div>
+
+</body></html>`;
 }
 
-function renderInterimPreview() {
-  const ir = state.currentInterim;
-  if (!ir) return;
-  const reportHTML = buildInterimReportHTML(ir);
-  render(`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <div style="background:rgba(139,92,246,0.15);color:#a78bfa;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">⚡ Interim Report #${ir.interimNo}</div>
-      <div style="font-size:13px;color:var(--muted)">${ir.customer} · ${ir.orderno}</div>
-    </div>
-    ${reportHTML}
-    <div class="spacer"></div>
-    <div class="bottom-nav">
-      <button class="btn btn-ghost" onclick="renderInterimStep(1)">← Edit</button>
-      <button class="btn btn-primary" onclick="downloadInterimPDF()">📥 Download PDF</button>
-    </div>
-  `);
-  document.getElementById('print-area').innerHTML = reportHTML;
-}
+
 
 // ── SHARED PDF DOWNLOAD ENGINE ───────────────────────────────────────
-// Renders any HTML string into a hidden element, captures via html2canvas,
-// and downloads as a named PDF. margin is in mm.
+// Renders HTML into a hidden iframe, captures each .pdf-page div
+// as a separate jsPDF page — guarantees no content ever splits.
 function _triggerPDFDownload(htmlContent, filename, margin) {
   margin = margin || 5;
   toast('⏳ PDF hazırlanıyor…', 8000);
 
-  // Detect if htmlContent is a full HTML document or a snippet
-  const isFullDoc = /<!DOCTYPE|<html/i.test(htmlContent);
+  const old = document.getElementById('_pdf_dl_iframe');
+  if (old) old.remove();
+  const iframe = document.createElement('iframe');
+  iframe.id = '_pdf_dl_iframe';
+  // Wide enough for A4, tall enough to render all pages without scrolling
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:5000px;border:none;visibility:hidden;';
+  document.body.appendChild(iframe);
 
-  function captureAndSave(el) {
-    html2canvas(el, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 }).then(function(canvas) {
+  iframe.onload = function() {
+    setTimeout(function() {
+      const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+      const pages = iDoc.querySelectorAll('.pdf-page');
+
+      if (!pages || pages.length === 0) {
+        // Fallback: capture entire body as single page
+        html2canvas(iDoc.body, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 }).then(function(canvas) {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+          const pageW = pdf.internal.pageSize.getWidth();
+          const contentW = pageW - margin * 2;
+          const imgH = (canvas.height / 2) * (contentW / (canvas.width / 2));
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, imgH);
+          const url = URL.createObjectURL(pdf.output('blob'));
+          const a = document.createElement('a'); a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          toast('✓ ' + filename + ' indirildi');
+          iframe.remove();
+        });
+        return;
+      }
+
+      // Capture each .pdf-page as a separate PDF page
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const contentW = pageW - margin * 2;
       const contentH = pageH - margin * 2;
-      const ratio = contentW / (canvas.width / 2);
-      const totalImgH = (canvas.height / 2) * ratio;
-      let yOffset = 0, pageNum = 0;
-      while (yOffset < totalImgH) {
-        if (pageNum > 0) pdf.addPage();
-        const srcY = (yOffset / ratio) * 2;
-        const srcH = (contentH / ratio) * 2;
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = Math.min(srcH, canvas.height - srcY);
-        sliceCanvas.getContext('2d').drawImage(canvas, 0, srcY, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
-        pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.97), 'JPEG', margin, margin, contentW, (sliceCanvas.height / 2) * ratio);
-        yOffset += contentH; pageNum++;
-      }
-      const url = URL.createObjectURL(pdf.output('blob'));
-      const a = document.createElement('a');
-      a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      toast('✓ ' + filename + ' indirildi');
-    }).catch(function(err) {
-      console.error('PDF error:', err);
-      toast('❌ PDF oluşturulamadı');
-    });
-  }
 
-  if (isFullDoc) {
-    // Render the full HTML document in a hidden iframe so all CSS applies correctly
-    const old = document.getElementById('_pdf_dl_iframe');
-    if (old) old.remove();
-    const iframe = document.createElement('iframe');
-    iframe.id = '_pdf_dl_iframe';
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;visibility:hidden;';
-    document.body.appendChild(iframe);
-    iframe.onload = function() {
-      setTimeout(function() {
-        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-        captureAndSave(iDoc.body);
-        setTimeout(function() { iframe.remove(); }, 6000);
-      }, 800);
-    };
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(htmlContent);
-    iframe.contentDocument.close();
-  } else {
-    // Snippet: inject into print-area div as before
-    const el = document.getElementById('print-area');
-    el.innerHTML = htmlContent;
-    el.style.cssText = 'display:block;position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:-1;';
-    captureAndSave(el);
-    setTimeout(function() { el.style.cssText = ''; }, 6000);
-  }
+      const captureNext = (idx) => {
+        if (idx >= pages.length) {
+          const url = URL.createObjectURL(pdf.output('blob'));
+          const a = document.createElement('a'); a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          toast('✓ ' + filename + ' indirildi');
+          iframe.remove();
+          return;
+        }
+        const pg = pages[idx];
+        html2canvas(pg, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 }).then(function(canvas) {
+          if (idx > 0) pdf.addPage();
+          const imgH = (canvas.height / 2) * (contentW / (canvas.width / 2));
+          // If the page content is taller than one A4, scale it to fit
+          const drawH = Math.min(imgH, contentH);
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, drawH);
+          captureNext(idx + 1);
+        }).catch(function(err) {
+          console.error('PDF page error:', err);
+          captureNext(idx + 1); // skip broken page
+        });
+      };
+      captureNext(0);
+    }, 1000); // wait for fonts and images
+    setTimeout(function() { if (iframe.parentNode) iframe.remove(); }, 30000);
+  };
+
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(htmlContent);
+  iframe.contentDocument.close();
 }
 
 function downloadInterimPDF() {
@@ -1809,7 +2434,10 @@ function openReport(id) {
   const r = state.reports.find(r => r.id === id);
   if (!r) return;
   state.currentReport = r;
-  downloadFinalPDF();
+  state.screen = 'wizard';
+  state.wizardStep = 1;
+  showHomeBtn();
+  showWizardStep(1);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1819,29 +2447,51 @@ function openReport(id) {
 function showManagePeople() {
   state.screen = 'people';
   showHomeBtn();
-  const p = loadPeople();
-  const roleSection = (key, label) => `
+  const p  = loadPeople();
+  const ip = loadInterimPeople();
+  const cp = loadChecklistPeople();
+  const roleSection = (key, label, people, saveFn, reloadFn) => `
     <div class="card-title" style="margin:14px 0 6px">${label}</div>
     <div id="people-list-${key}">
-      ${(p[key]||[]).map((name,i) => `
+      ${(people||[]).map((name,i) => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface);border-radius:6px;margin-bottom:6px">
           <span style="font-size:14px">${name}</span>
-          <button class="btn btn-danger btn-sm" onclick="deletePerson('${key}',${i})">✕ ${t('Remove')}</button>
+          <button class="btn btn-danger btn-sm" onclick="${reloadFn}('${key}',${i})">✕ ${t('Remove')}</button>
         </div>`).join('') || `<div style="color:var(--muted);font-size:13px;padding:6px 0">${t('No people added yet.')}</div>`}
     </div>
     <div style="display:flex;gap:8px;margin-bottom:4px">
       <input id="add-${key}" placeholder="${t('Full name...')}" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none">
-      <button class="btn btn-primary btn-sm" onclick="addPerson('${key}')">+ ${t('Add')}</button>
+      <button class="btn btn-primary btn-sm" onclick="${saveFn}('${key}')">+ ${t('Add')}</button>
     </div>`;
   render(`
     <div class="dash-header"><h2>👥 ${t('Manage People')}</h2><p>${t('Add or remove names for dropdown lists in reports.')}</p></div>
-    ${roleSection('qc','QC Name · Kalite Kontrolcü')}
+    <div style="font-size:11px;color:var(--muted);background:rgba(58,111,212,0.07);border:1px solid rgba(58,111,212,0.18);border-radius:var(--r-sm);padding:9px 12px;margin-bottom:16px">
+      Names are grouped by report type. Each section only affects its own dropdowns.
+    </div>
+
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">📋 Final Report</div>
+    ${roleSection('qc','QC Name · Kalite Kontrolcü', p.qc, 'addPerson', 'deletePerson')}
     <div class="divider"></div>
-    ${roleSection('dept','Dept. Manager · Departman Müdürü')}
+    ${roleSection('dept','Dept. Manager · Departman Müdürü', p.dept, 'addPerson', 'deletePerson')}
     <div class="divider"></div>
-    ${roleSection('qa','QA Manager · Kalite Güvence Müdürü')}
+    ${roleSection('qa','QA Manager · Kalite Güvence Müdürü', p.qa, 'addPerson', 'deletePerson')}
     <div class="divider"></div>
-    ${roleSection('supplier','Supplier Rep · Firma Yetkilisi')}
+    ${roleSection('supplier','Supplier Rep · Firma Yetkilisi', p.supplier, 'addPerson', 'deletePerson')}
+
+    <div class="divider" style="margin:20px 0 8px"></div>
+    <div style="font-size:13px;font-weight:600;color:#a78bfa;margin-bottom:4px">⚡ Ara Kontrol Raporu</div>
+    ${roleSection('interim-qc','QC Name · Kalite Kontrolcü (Ara Kontrol)', ip.qc, 'addInterimPerson', 'deleteInterimPerson')}
+    <div class="divider"></div>
+    ${roleSection('interim-supervisor','Sorumlu · Supervisor (Ara Kontrol)', ip.supervisor, 'addInterimPerson', 'deleteInterimPerson')}
+
+    <div class="divider" style="margin:20px 0 8px"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--pass);margin-bottom:4px">✅ Final Checklist · Son Kontrol Listesi</div>
+    ${roleSection('cl-packingSupv','Packing Supervisor · Paketleme Sorumlusu', cp.packingSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
+    <div class="divider"></div>
+    ${roleSection('cl-qcSupv','QC Supervisor · QC Sorumlusu', cp.qcSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
+    <div class="divider"></div>
+    ${roleSection('cl-warehouseSupv','Warehouse Supervisor · Depo Sorumlusu', cp.warehouseSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
+
     <div style="height:20px"></div>
   `);
 }
@@ -1864,6 +2514,53 @@ function deletePerson(key, idx) {
   if (!confirm(`${t('Remove this person?')} "${p[key][idx]}"`)) return;
   p[key].splice(idx, 1);
   savePeople(p);
+  showManagePeople();
+}
+
+function addInterimPerson(rawKey) {
+  const key = rawKey.replace('interim-', '');
+  const input = qs(`#add-${rawKey}`);
+  const name = (input?.value||'').trim();
+  if (!name) { toast(t('Please enter a name')); return; }
+  const ip = loadInterimPeople();
+  if (!ip[key]) ip[key] = [];
+  if (ip[key].includes(name)) { toast(t('Name already exists')); return; }
+  ip[key].push(name);
+  saveInterimPeople(ip);
+  toast(`${t('✓ Added:')} ${name}`);
+  showManagePeople();
+}
+
+function deleteInterimPerson(rawKey, idx) {
+  const key = rawKey.replace('interim-', '');
+  const ip = loadInterimPeople();
+  if (!confirm(`${t('Remove this person?')} "${ip[key][idx]}"`)) return;
+  ip[key].splice(idx, 1);
+  saveInterimPeople(ip);
+  showManagePeople();
+}
+
+function addChecklistPerson(rawKey) {
+  // rawKey like 'cl-packingSupv'
+  const key = rawKey.replace('cl-', '');
+  const input = qs(`#add-${rawKey}`);
+  const name = (input?.value||'').trim();
+  if (!name) { toast(t('Please enter a name')); return; }
+  const cp = loadChecklistPeople();
+  if (!cp[key]) cp[key] = [];
+  if (cp[key].includes(name)) { toast(t('Name already exists')); return; }
+  cp[key].push(name);
+  saveChecklistPeople(cp);
+  toast(`${t('✓ Added:')} ${name}`);
+  showManagePeople();
+}
+
+function deleteChecklistPerson(rawKey, idx) {
+  const key = rawKey.replace('cl-', '');
+  const cp = loadChecklistPeople();
+  if (!confirm(`${t('Remove this person?')} "${cp[key][idx]}"`)) return;
+  cp[key].splice(idx, 1);
+  saveChecklistPeople(cp);
   showManagePeople();
 }
 
@@ -2722,12 +3419,19 @@ ${(() => {
   const photoGrid = allPhotos.length ? `
 <div class="section-bar" style="margin-top:0">PHOTOS · Fotoğraflar (${allPhotos.length})</div>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px;margin-bottom:10px">
-  ${allPhotos.map(p => `
-    <div style="border:1px solid #ccc;border-radius:6px;overflow:hidden">
-      <img src="${p.url}" style="width:100%;object-fit:cover;display:block">
-      <div style="font-size:9px;font-weight:700;color:#374151;text-align:center;padding:3px 4px;background:#f9fafb">${p.label}</div>
-    </div>
-  `).join('')}
+  ${(() => {
+    const rows = [];
+    for (let i = 0; i < allPhotos.length; i += 2) rows.push(allPhotos.slice(i, i+2));
+    return rows.map(row => `
+      <div style="display:contents">
+        ${row.map(p => `
+          <div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px">
+            <img src="${p.url}" style="max-width:100%;max-height:220px;width:auto;height:auto;display:block">
+            <div style="font-size:9px;font-weight:700;color:#374151;text-align:center;padding:3px 4px;background:#f9fafb;width:100%">${p.label||''}</div>
+          </div>`).join('')}
+        ${row.length === 1 ? `<div></div>` : ''}
+      </div>`).join('');
+  })()}
 </div>` : '';
 
   const notesCards = (() => {
