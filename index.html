@@ -264,10 +264,13 @@ body {
   flex:1; width:100%; display:flex; align-items:center; justify-content:center;
   overflow:hidden; position:relative;
 }
+.cam-editor-topbar {
+  width:100%; background:rgba(0,0,0,0.85); padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
 .cam-editor-img canvas {
   max-width:100%; max-height:100%;
-  display:block; transition:transform 0.2s;
-  touch-action:none; cursor:crosshair;
+  display:block; touch-action:none; cursor:crosshair;
 }
 .cam-toolbar {
   width:100%; background:#1a1a1a; padding:10px 16px;
@@ -293,7 +296,8 @@ body {
 .cam-top-bar {
   width:100%; background:rgba(0,0,0,0.6); padding:10px 16px;
   display:flex; align-items:center; justify-content:space-between;
-  position:absolute; top:0; left:0; z-index:10;
+  flex-shrink:0;      /* always visible, never compressed */
+  z-index:10;
 }
 .cam-bottom-bar {
   width:100%; background:rgba(0,0,0,0.85); padding:20px 16px;
@@ -497,34 +501,34 @@ body {
 </style>
 </head>
 <body>
-<!-- ══ FULLSCREEN CAMERA MODAL ══════════════════════════════════ -->
+<!-- ══ FULLSCREEN CAMERA MODAL ══════════════════════════════════════ -->
 <div class="cam-modal" id="cam-modal">
   <div class="cam-top-bar">
-    <button class="cam-btn danger" onclick="camClose()">✕</button>
+    <button class="cam-btn danger" onclick="camClose()" data-i18n="cam-close">✕ Kapat</button>
     <span id="cam-label-display" style="color:#fff;font-size:14px;font-weight:600;max-width:60%;text-align:center"></span>
-    <button class="cam-btn" onclick="camFlip()">🔄</button>
+    <button class="cam-btn" onclick="camFlip()" data-i18n="cam-flip">🔄 Çevir</button>
   </div>
-  <video id="cam-video" autoplay playsinline muted style="flex:1;width:100%;object-fit:cover;display:block"></video>
+  <video id="cam-video" autoplay playsinline muted></video>
   <canvas id="cam-snap" style="display:none"></canvas>
   <div class="cam-bottom-bar">
-    <label class="cam-btn" style="cursor:pointer">
+    <label class="cam-btn" style="cursor:pointer" title="Upload">
       📁
       <input type="file" accept="image/*" multiple style="display:none" onchange="camUpload(this)">
     </label>
-    <button class="cam-shutter" onclick="camSnap()"></button>
+    <button class="cam-shutter" onclick="camSnap()" aria-label="Take photo"></button>
     <div style="width:60px"></div>
   </div>
 </div>
 
-<!-- ══ PHOTO EDITOR MODAL (crop + rotate) ════════════════════════ -->
+<!-- ══ PHOTO EDITOR MODAL (crop + rotate) ═══════════════════════════ -->
 <div class="cam-editor" id="cam-editor">
-  <div style="width:100%;background:rgba(0,0,0,0.8);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-    <button class="cam-btn danger" onclick="editorDiscard()">✕</button>
-    <span style="color:#fff;font-size:14px;font-weight:600">Edit Photo</span>
-    <button class="cam-btn primary" onclick="editorSave()">✓ Use</button>
+  <div class="cam-editor-topbar">
+    <button class="cam-btn danger" onclick="editorDiscard()" data-i18n="ed-discard">✕ İptal</button>
+    <span data-i18n="ed-title" style="color:#fff;font-size:14px;font-weight:600">Fotoğraf Düzenle</span>
+    <button class="cam-btn primary" onclick="editorSave()" data-i18n="ed-save">✓ Kullan</button>
   </div>
   <div class="cam-editor-img" id="cam-editor-img">
-    <canvas id="editor-canvas" style="max-width:100%;max-height:100%;display:block;touch-action:none"></canvas>
+    <canvas id="editor-canvas"></canvas>
     <div class="crop-overlay" id="crop-overlay" style="display:none">
       <div class="crop-handle" style="top:-7px;left:-7px;cursor:nw-resize" data-handle="tl"></div>
       <div class="crop-handle" style="top:-7px;right:-7px;cursor:ne-resize" data-handle="tr"></div>
@@ -533,12 +537,12 @@ body {
     </div>
   </div>
   <div class="cam-toolbar">
-    <button class="cam-btn" onclick="editorRotate(-90)">↺ L</button>
-    <button class="cam-btn" onclick="editorRotate(90)">↻ R</button>
-    <button class="cam-btn" onclick="editorFlipH()">↔</button>
-    <button class="cam-btn" onclick="editorFlipV()">↕</button>
-    <button class="cam-btn" id="crop-toggle-btn" onclick="editorToggleCrop()">✂ Crop</button>
-    <button class="cam-btn" onclick="editorReset()">↺ Reset</button>
+    <button class="cam-btn" onclick="editorRotate(-90)" data-i18n="ed-rotL">↺ Sol</button>
+    <button class="cam-btn" onclick="editorRotate(90)"  data-i18n="ed-rotR">↻ Sağ</button>
+    <button class="cam-btn" onclick="editorFlipH()"     data-i18n="ed-flipH">↔ Yatay</button>
+    <button class="cam-btn" onclick="editorFlipV()"     data-i18n="ed-flipV">↕ Dikey</button>
+    <button class="cam-btn" onclick="editorToggleCrop()" id="crop-toggle-btn" data-i18n="ed-crop">✂ Kırp</button>
+    <button class="cam-btn" onclick="editorReset()"     data-i18n="ed-reset">↺ Sıfırla</button>
   </div>
 </div>
 
@@ -798,7 +802,7 @@ const TR = {
   'Create New Report':'Yeni Rapor Oluştur',
   'Search by PO number...':'PO numarası ile ara...',
   'All Brands':'Tüm Müşteriler',
-  '🗑 Delete':'🗑 Sil',
+  'Delete':'Sil',
   // ── New Order form ───────────────────────────────────────────────────
   'New Inspection':'Yeni Kontrol',
   'Enter the order details to get started.':'Başlamak için sipariş bilgilerini girin.',
@@ -832,7 +836,19 @@ const TR = {
   'Sorumlu · Supervisor':'Sorumlu','Kalite Kontrolcü · QC Name':'Kalite Kontrolcü',
   '📸 Fotoğraflar · Photos':'📸 Fotoğraflar',
   'Photos will appear on page 2 of the PDF.':'Fotoğraflar PDF\'in 2. sayfasında görünecektir.',
-  'Open Camera':'Kamerayı Aç','✕ Close Camera':'✕ Kamerayı Kapat',
+  'Open Camera':'Kamerayı Aç',
+  '✕ Close Camera':'✕ Kamerayı Kapat',
+  'Camera not available.':'Kamera kullanılamıyor.',
+  'Please upload photos from your device.':'Lütfen fotoğrafları cihazınızdan yükleyin.',
+  'Edit Photo':'Fotoğraf Düzenle',
+  'Discard':'İptal',
+  'Use Photo':'Kullan',
+  'Rotate Left':'Sola Döndür',
+  'Rotate Right':'Sağa Döndür',
+  'Flip Horizontal':'Yatay Çevir',
+  'Flip Vertical':'Dikey Çevir',
+  'Crop':'Kırp',
+  'Reset':'Sıfırla',
   '📁 Upload Photos':'📁 Fotoğraf Yükle','Upload Photos':'Fotoğraf Yükle',
   'Add Photo':'Fotoğraf Ekle','No photos added':'Fotoğraf eklenmedi',
   '📸 Photo saved':'📸 Fotoğraf kaydedildi',
@@ -1258,7 +1274,45 @@ const camState = {
   dragState: null,
 };
 
-// ── Open the camera ──────────────────────────────────────────────────
+// ── Camera button translations ────────────────────────────────────────
+const CAM_I18N = {
+  tr: {
+    'cam-close':  '✕ Kapat',
+    'cam-flip':   '🔄 Çevir',
+    'ed-discard': '✕ İptal',
+    'ed-title':   'Fotoğraf Düzenle',
+    'ed-save':    '✓ Kullan',
+    'ed-rotL':    '↺ Sol',
+    'ed-rotR':    '↻ Sağ',
+    'ed-flipH':   '↔ Yatay',
+    'ed-flipV':   '↕ Dikey',
+    'ed-crop':    '✂ Kırp',
+    'ed-reset':   '↺ Sıfırla',
+  },
+  en: {
+    'cam-close':  '✕ Close',
+    'cam-flip':   '🔄 Flip',
+    'ed-discard': '✕ Discard',
+    'ed-title':   'Edit Photo',
+    'ed-save':    '✓ Use',
+    'ed-rotL':    '↺ Left',
+    'ed-rotR':    '↻ Right',
+    'ed-flipH':   '↔ Flip H',
+    'ed-flipV':   '↕ Flip V',
+    'ed-crop':    '✂ Crop',
+    'ed-reset':   '↺ Reset',
+  },
+};
+
+function updateCameraUI() {
+  const map = CAM_I18N[uiLang] || CAM_I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (map[key]) el.textContent = map[key];
+  });
+}
+
+// ── Open the camera ───────────────────────────────────────────────────
 async function camOpen(onSave, labelText) {
   camState.onSave = onSave;
   camState.label  = labelText || '';
@@ -1614,6 +1668,7 @@ function toggleLang() {
   if (btn) btn.textContent = uiLang === 'tr' ? '🇬🇧 English' : '🇹🇷 Türkçe';
   const homeBtn = qs('#home-btn');
   if (homeBtn) homeBtn.textContent = '← ' + t('Home');
+  updateCameraUI();
   if (state.screen === 'dashboard') showDashboard();
   else if (state.screen === 'storage') showStorageManager();
   else if (state.screen === 'people') showManagePeople();
@@ -1673,7 +1728,7 @@ function showStorageManager() {
         <div style="height:100%;width:${info.pct}%;background:${color};border-radius:4px;transition:width 0.3s"></div>
       </div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">${t('If storage is full, old reports may be lost when saving. Clear storage to free up space. Make sure to export any reports as PDF first.')} ${t('People and customer lists will not be affected.')}</p>
-      <button class="btn btn-danger" onclick="clearAllStorage()" style="width:100%">🗑 ${t('Clear All Reports')}</button>
+      <button class="btn btn-danger" onclick="clearAllStorage()" style="width:100%">${t('Clear All Reports')}</button>
     </div>
   `);
 }
@@ -1799,7 +1854,7 @@ function filterOrders() {
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteOrder('${encodeURIComponent(o.customer||'')}','${encodeURIComponent(o.orderno||'')}')">🗑 ${t('🗑 Delete')}</button>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteOrder('${encodeURIComponent(o.customer||'')}','${encodeURIComponent(o.orderno||'')}')">${t('Delete')}</button>
         <span style="color:var(--muted);font-size:20px">›</span>
       </div>
     </div>`;
@@ -1834,7 +1889,7 @@ async function deleteOrder(customerEnc, ordernoEnc) {
       try { await sb.rest('DELETE', 'checklists', null, { id: `eq.${cl.id}` }); } catch(e) { console.warn('[AQL] Delete checklist failed:', e.message); }
     }
   }
-  toast(`🗑 ${uiLang==='tr'?'Sipariş silindi':'Order deleted'}: ${customer} · ${orderno}`);
+  toast(`${uiLang==='tr'?'Sipariş silindi':'Order deleted'}: ${customer} · ${orderno}`);
   showDashboard();
 }
 
@@ -4617,6 +4672,7 @@ async function loadCustomersFromSupabase() {
 
 // ══ INIT ══════════════════════════════════════════════════════════
 showDashboard();
+updateCameraUI();
 
 // Bootstrap: load from Supabase and re-render if cloud data exists
 (async function aqlSupabaseInit() {
