@@ -243,11 +243,15 @@ body {
 /* ── Camera modal — fullscreen ── */
 .cam-modal {
   display:none; position:fixed; inset:0; z-index:2000;
-  background:#000; flex-direction:column;
+  background:#000; flex-direction:column; overflow:hidden;
 }
 .cam-modal.open { display:flex; }
 .cam-modal video {
-  width:100%; flex:1; object-fit:cover; display:block;
+  width:100%;
+  flex:1;
+  min-height:0;       /* critical — lets flex shrink below natural size */
+  object-fit:cover;
+  display:block;
 }
 .cam-modal canvas { display:none; }
 /* ── Editor mode (crop/rotate) ── */
@@ -292,8 +296,9 @@ body {
   position:absolute; top:0; left:0; z-index:10;
 }
 .cam-bottom-bar {
-  width:100%; background:rgba(0,0,0,0.6); padding:16px;
+  width:100%; background:rgba(0,0,0,0.85); padding:20px 16px;
   display:flex; align-items:center; justify-content:center; gap:24px;
+  flex-shrink:0;      /* never compressed — always visible */
 }
 /* Crop rectangle overlay */
 .crop-overlay {
