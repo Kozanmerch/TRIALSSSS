@@ -326,6 +326,41 @@ body {
 }
 .spacer { height: 80px; }
 
+/* ══════════════════════════════════════════════
+   Reusable form element classes
+   Use in JS render functions instead of long
+   inline style strings. Matches design tokens.
+   ══════════════════════════════════════════════ */
+.app-input {
+  width:100%;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;
+  font-size:14px;color:var(--text);outline:none;box-sizing:border-box;
+}
+.app-input-sm {
+  width:100%;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:7px 9px;font-family:inherit;
+  font-size:13px;color:var(--text);outline:none;box-sizing:border-box;
+}
+.app-select {
+  width:100%;background:#f5f5f5;border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;
+  font-size:14px;color:#111;outline:none;box-sizing:border-box;
+}
+.app-select-sm {
+  width:100%;background:#f5f5f5;border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:7px 9px;font-family:inherit;
+  font-size:13px;color:#111;outline:none;box-sizing:border-box;
+}
+.app-textarea {
+  width:100%;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;
+  font-size:14px;color:var(--text);outline:none;resize:vertical;min-height:72px;box-sizing:border-box;
+}
+.app-input[readonly],.app-input-sm[readonly]{opacity:0.65;cursor:not-allowed;}
+.app-input.auto-field{opacity:0.7;cursor:default;}
+.section-card{margin-bottom:12px;}
+.section-title{margin-bottom:8px;}
+
 .section-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 16px; overflow-x: auto; }
 .tab-btn {
   padding: 8px 14px; border: none; background: none; color: var(--muted);
@@ -409,8 +444,29 @@ body {
 <div id="print-area" style="display:none"></div>
 
 <script>
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  AQL INSPECTION SYSTEM — single-file app                            ║
+// ║  Search guide: before editing any feature, search these terms first  ║
+// ╠══════════════════════════════════════════════════════════════════════╣
+// ║  Photos      → photos, addPhoto, deletePhoto, compressImage         ║
+// ║  Camera      → cameraStream, startCamera, stopCamera, getUserMedia  ║
+// ║  PDF/Print   → buildPrintHTML, buildInterimReportHTML,              ║
+// ║                buildChecklistPDF, _triggerPDFDownload               ║
+// ║  Supabase    → sb.rest, persistReports, saveInterimReports,         ║
+// ║                saveChecklists, reportToRow, rowToReport             ║
+// ║  People      → loadPeople, savePeople, loadPeopleDefaults,          ║
+// ║                showManagePeople, peopleOpts                         ║
+// ║  Translations → TR dictionary, t(), uiLang, toggleLang             ║
+// ║  Defects     → DEFECT_CATEGORIES, changeDefect, defectTotals        ║
+// ║  AQL         → AQL_TABLES, getAQLLimits, saveStep2, selectAQL       ║
+// ║  Checklist   → CHECKLIST_SECTIONS, renderChecklistForm,             ║
+// ║                signOffChecklist, setChecklistItem                   ║
+// ║  In-Line     → INTERIM_PKG_ITEMS, renderInterimForm,                ║
+// ║                buildInterimReportHTML, saveInterimReports           ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
 // ══════════════════════════════════════════════════════════════════════
-// CONSTANTS
+// CONSTANTS & STORAGE KEYS
 // ══════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEY      = 'aql_reports_v1';
@@ -428,6 +484,9 @@ const PHOTO_QUALITY    = 0.65;
 const PRINT_DELAY_MS   = 300;
 const TOAST_DURATION   = 2000;
 
+// ──────────────────────────────────────────────
+// AQL TABLES
+// ──────────────────────────────────────────────
 const AQL_TABLES = {
   // Format: [SampleSize, Critical_Ac(always 0), Major_Ac, Minor_Ac]
   // Source: ISO 2859-1 / ANSI Z1.4, General Inspection Level II
@@ -494,6 +553,9 @@ const AQL_TABLES = {
   },
 };
 
+// ──────────────────────────────────────────────
+// DEFECT CATEGORIES
+// ──────────────────────────────────────────────
 const DEFECT_CATEGORIES = [
   { id:'fabric',    label:'Fabric Defects',          sub:'Kumaş Hataları',              items:[{code:'T01',en:'Weaving / Knitting Fault',tr:'Kumaş dokuma/örgü hatası'},{code:'T02',en:'Fly / Foreign Fibre',tr:'Yabancı elyaf'},{code:'T03',en:'Sticker left',tr:'Ürün içinde meto'},{code:'T04',en:'Cut in Fabric',tr:'Kumaşta jut'}]},
   { id:'subop',     label:'Sub-Operations Defects',  sub:'Ara İşlem Hataları',          items:[{code:'T03',en:'Printing / Embroidery',tr:'Baskı / Nakış'},{code:'T04',en:'Diamonte',tr:'Taş yapıştırma'}]},
@@ -503,6 +565,9 @@ const DEFECT_CATEGORIES = [
   { id:'finishing', label:'Finishing Defects',        sub:'Bitim İşlemleri',             items:[{code:'P08',en:'Washing Defect',tr:'Yıkama hatası'},{code:'P09',en:'Stain / Dirt',tr:'Leke/kir'},{code:'P10',en:'Oil stain',tr:'Yağ lekesi/kusma'},{code:'P11',en:'Pressing: Crease/Burn/Glazing',tr:'Ütü: Kat izi/yanık/parlama'},{code:'P12',en:'Over / Under Pressed',tr:'Ütü: Fazla/eksik'},{code:'P13',en:'Improperly pressed',tr:'Bozuk ütü'},{code:'P14',en:'Thread Trimming Insufficient',tr:'İplik temizliği yetersiz'}]},
 ];
 
+// ──────────────────────────────────────────────
+// PHOTO LABELS
+// ──────────────────────────────────────────────
 const PHOTO_LABELS = [
   'Front View / Ön görünüm',
   'Back View / Arka görünüm',
@@ -523,9 +588,16 @@ const PHOTO_LABELS = [
   'Packing List / Çeki listesi',
   'Kozan sample card (reference) / Kozan numune kartı (referans)'
 ];
+// ──────────────────────────────────────────────
+// STEP / CATEGORY CONSTANTS
+// ──────────────────────────────────────────────
 const STEP_LABELS   = ['Order Info','AQL Setup','Defects','Photos','General','Report'];
 const LEFT_CATS     = ['fabric','subop','trim','sewing'];
 const RIGHT_CATS    = ['packaging','finishing'];
+
+// ══════════════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ══════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════
 // TRANSLATIONS
@@ -636,7 +708,7 @@ const TR = {
   'Rapor Bilgileri · Report Info':'Rapor Bilgileri',
   'Müşteri · Customer':'Müşteri','İmalatçı · Manufacturer':'İmalatçı',
   'Sipariş No · Order No':'Sipariş No','Model Kodu · Style No':'Model Kodu',
-  'Model / Kumaş Tanımı · Fabric Description':'Model / Kumaş Tanımı',
+  'Kumaş Tanımı · Fabric Description':'Kumaş Tanımı',
   'Renk · Colour':'Renk','Beden · Size':'Beden','Adet · Qty':'Adet',
   'Tarih · Date':'Tarih','Saat · Time':'Saat','Kontrol No #':'Kontrol No',
   '📦 Paketleme · Packaging':'📦 Paketleme',
@@ -733,6 +805,10 @@ const t = s => uiLang === 'tr' && TR[s] ? TR[s] : s;
 // STATE  —  single update path so every write auto-persists
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════
+
 const state = {
   screen: 'dashboard',
   wizardStep: 1,
@@ -767,6 +843,11 @@ function updateReport(fn) {
 // STORAGE
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// STORAGE — Reports, Interim, Checklists
+// People/Customers are persisted immediately on change (see PEOPLE section)
+// ══════════════════════════════════════════════════════════════════════
+
 async function persistReports() {
   // Sort by date ascending so oldest is first (index 0)
   const sorted = [...state.reports].sort((a, b) => {
@@ -775,7 +856,6 @@ async function persistReports() {
     return da < db ? -1 : da > db ? 1 : 0;
   });
 
-  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   let attempts = 0;
   while (sorted.length > 0) {
@@ -810,8 +890,6 @@ async function persistReports() {
   }
 }
 
-// Kept for backward-compat call sites that haven't migrated yet
-function saveReports() { persistReports(); }
 
 (function loadReports() {
   try {
@@ -841,6 +919,9 @@ async function saveInterimReports() {
 })();
 
 // Download a full .json backup to device
+// ──────────────────────────────────────────────
+// JSON IMPORT / EXPORT (backup/restore)
+// ──────────────────────────────────────────────
 function saveReportToFile(r) {
   const brand    = (r.customer || 'Brand').replace(/[^a-zA-Z0-9]/g, '_');
   const po       = (r.orderno  || 'PO'   ).replace(/[^a-zA-Z0-9]/g, '_');
@@ -880,6 +961,11 @@ function importReports(input) {
 
 // ══════════════════════════════════════════════════════════════════════
 // PEOPLE & CUSTOMERS  (localStorage, separate keys)
+// ══════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════
+// PEOPLE MANAGEMENT
+// Defaults stored in localStorage (per-device). Lists synced to Supabase.
 // ══════════════════════════════════════════════════════════════════════
 
 function loadPeople()     { try { return JSON.parse(localStorage.getItem(PEOPLE_KEY) || 'null') || {qc:[],dept:[],qa:[],supplier:[]}; } catch(_){ return {qc:[],dept:[],qa:[],supplier:[]}; } }
@@ -925,6 +1011,10 @@ async function saveChecklists() {
   }
 }
 (function initChecklists() { state.checklists = loadChecklists(); })();
+// ══════════════════════════════════════════════════════════════════════
+// CUSTOMERS
+// ══════════════════════════════════════════════════════════════════════
+
 function loadCustomers()  { try { return JSON.parse(localStorage.getItem(CUSTOMERS_KEY) || '[]'); } catch(_){ return []; } }
 
 async function savePeople(p) {
@@ -1032,6 +1122,10 @@ function normDefectPhotos(d) {
 // DOM / RENDER HELPERS
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════════════
+
 const qs     = sel => document.querySelector(sel);
 const render = html => qs('#main-content').innerHTML = html;
 
@@ -1137,6 +1231,10 @@ function getStorageInfo() {
   return { usedKB, pct };
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// STORAGE MANAGER UI
+// ══════════════════════════════════════════════════════════════════════
+
 function clearAllStorage() {
   if (!confirm(t('Clear ALL storage?\n\nThis will delete all saved reports and data. Make sure you have exported any reports you need as PDF first.'))) return;
   // Only remove reports — people, customers and defaults are preserved
@@ -1180,6 +1278,10 @@ function hideHomeBtn() {
   const homeBtn = qs('#home-btn');
   if (homeBtn) homeBtn.style.display = 'none';
 }
+
+// ══════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════════════
 
 function showDashboard() {
   // Warn if user is mid-inspection and hasn't completed it
@@ -1236,8 +1338,7 @@ function showDashboard() {
         style="width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none">
     </div>
     <div style="margin-bottom:14px">
-      <select id="filter-brand" onchange="filterOrders()"
-        style="width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:#111;outline:none">
+      <select id="filter-brand" onchange="filterOrders()" class="app-select">
         <option value="">🏷 ${uiLang==='tr'?'Tüm Müşteriler':'All Brands'}</option>
         ${[...new Set([...state.reports.map(r=>r.customer||''), ...state.interimReports.map(r=>r.customer||'')].filter(Boolean))].sort().map(c=>`<option value="${c}">${c}</option>`).join('')}
       </select>
@@ -1331,6 +1432,10 @@ async function deleteOrder(customerEnc, ordernoEnc) {
 // NEW ORDER ENTRY  —  captures Brand + PO, then shows type chooser
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// NEW ORDER ENTRY
+// ══════════════════════════════════════════════════════════════════════
+
 function startNewOrder() {
   const allCustomers = loadCustomers();
   state.screen = 'neworder';
@@ -1340,7 +1445,7 @@ function startNewOrder() {
     <div class="card">
       <div class="grid-2" style="margin-bottom:14px">
         <div class="field"><label>${t('Customer · Müşteri')}</label><select id="no-customer">${customerOpts('')}</select></div>
-        <div class="field"><label>${t('Order No · Sipariş No')}</label><input id="no-orderno" placeholder="" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none"></div>
+        <div class="field"><label>${t('Order No · Sipariş No')}</label><input id="no-orderno" placeholder="" class="app-input"></div>
       </div>
       <div class="card-title" style="margin-bottom:12px">${uiLang==='tr'?'Rapor Türü':'Report Type · Rapor Türü'}</div>
       <div class="report-type-card interim" onclick="createNewInterim()">
@@ -1399,6 +1504,10 @@ function createNewFinal() {
 // FINAL CHECKLIST — structure & data
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// FINAL CHECKLIST — data structure & constants
+// ══════════════════════════════════════════════════════════════════════
+
 const CHECKLIST_SECTIONS = [
   {
     id: 'packaging',
@@ -1446,6 +1555,9 @@ const CHECKLIST_SIGNOFF_ROLES = [
   { id: 'warehouseSupv', label: 'Warehouse Supervisor · Depo Sorumlusu' },
 ];
 
+// ──────────────────────────────────────────────
+// CHECKLIST — create / edit / delete
+// ──────────────────────────────────────────────
 function newChecklist(customer, orderno) {
   const now = new Date();
   const p = n => String(n).padStart(2,'0');
@@ -1531,8 +1643,7 @@ function renderChecklistForm() {
     `<option value="">— ${t('Who')||'Who'} —</option>` +
     checkedByNames.map(n => `<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
 
-  const inputStyle = 'width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;font-family:inherit;font-size:13px;color:var(--text);outline:none';
-  const selectStyle = 'width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 9px;font-family:inherit;font-size:13px;color:#111;outline:none';
+  // CSS classes: .app-input-sm, .app-select-sm (defined in <style>)
 
   // Build each section as a full-width table
   const sectionsHTML = CHECKLIST_SECTIONS.map(sec => {
@@ -1550,11 +1661,11 @@ function renderChecklistForm() {
           </div>
         </td>
         <td style="padding:6px 8px;vertical-align:middle;width:160px">
-          <select onchange="updateChecklistItemField('${item.id}','checkedBy',this.value)" style="${selectStyle}">${nameOptsFor(entry.checkedBy)}</select>
+          <select onchange="updateChecklistItemField('${item.id}','checkedBy',this.value)" class="app-select-sm">${nameOptsFor(entry.checkedBy)}</select>
         </td>
         <td style="padding:6px 8px;vertical-align:middle;width:120px;font-size:11px;color:var(--muted);white-space:nowrap">${entry.date||'—'}</td>
         <td style="padding:6px 8px;vertical-align:middle">
-          <input placeholder="" value="${(entry.comments||'').replace(/"/g,'&quot;')}" oninput="updateChecklist(c=>c.items['${item.id}'].comments=this.value)" style="${inputStyle}">
+          <input placeholder="" value="${(entry.comments||'').replace(/"/g,'&quot;')}" oninput="updateChecklist(c=>c.items['${item.id}'].comments=this.value)" class="app-input">
         </td>
       </tr>`;
     }).join('');
@@ -1587,7 +1698,7 @@ function renderChecklistForm() {
     <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;background:var(--surface)">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${role.label}</div>
       <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
-        <select onchange="updateChecklist(c=>c.signoffs['${role.id}'].name=this.value)" style="${selectStyle}">${opts}</select>
+        <select onchange="updateChecklist(c=>c.signoffs['${role.id}'].name=this.value)" class="app-select-sm">${opts}</select>
         <button onclick="signOffChecklist('${role.id}')" style="padding:8px 16px;border-radius:var(--r-sm);border:none;background:${so.signed?'var(--pass-bg)':'var(--accent2)'};color:${so.signed?'var(--pass)':'#fff'};cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;white-space:nowrap">
           ${so.signed ? '✓ ' + t('Sign Off') + ' · '+so.date : t('Sign Off')}
         </button>
@@ -1605,15 +1716,15 @@ function renderChecklistForm() {
     <div class="card" style="margin-bottom:14px">
       <div class="card-title" style="margin-bottom:10px">${t('Shipment Details · Yükleme Bilgileri')}</div>
       <div class="grid-2">
-        <div class="field"><label>${t('Customer · Müşteri')}</label><input value="${cl.header.customer||cl.customer||''}" oninput="updateChecklist(c=>c.header.customer=this.value)" style="${inputStyle}"></div>
-        <div class="field"><label>${t('PO Number · PO Numarası')}</label><input value="${cl.header.poNo||''}" oninput="updateChecklist(c=>c.header.poNo=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>${t('Customer · Müşteri')}</label><input value="${cl.header.customer||cl.customer||''}" oninput="updateChecklist(c=>c.header.customer=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('PO Number · PO Numarası')}</label><input value="${cl.header.poNo||''}" oninput="updateChecklist(c=>c.header.poNo=this.value)" class="app-input"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label>${t('Style Name / Model No')}</label><input value="${cl.header.styleName||''}" oninput="updateChecklist(c=>c.header.styleName=this.value)" style="${inputStyle}"></div>
-        <div class="field"><label>${t('Colour · Renk')}</label><input value="${cl.header.colour||''}" oninput="updateChecklist(c=>c.header.colour=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>${t('Style Name / Model No')}</label><input value="${cl.header.styleName||''}" oninput="updateChecklist(c=>c.header.styleName=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('Colour · Renk')}</label><input value="${cl.header.colour||''}" oninput="updateChecklist(c=>c.header.colour=this.value)" class="app-input"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label>${t('Shipment Date · Yükleme Tarihi')}</label><input value="${cl.header.shipmentDate||''}" oninput="updateChecklist(c=>c.header.shipmentDate=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>${t('Shipment Date · Yükleme Tarihi')}</label><input value="${cl.header.shipmentDate||''}" oninput="updateChecklist(c=>c.header.shipmentDate=this.value)" class="app-input"></div>
       </div>
     </div>
 
@@ -1795,6 +1906,10 @@ function downloadChecklistPDF() {
 
 // ══════════════════════════════════════════════════════════════════════
 // ORDER HUB  —  all reports for a given Brand + PO
+// ══════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════
+// ORDER HUB — all reports for a Brand + PO
 // ══════════════════════════════════════════════════════════════════════
 
 function openOrderHub(customerEnc, ordernoEnc) {
@@ -2012,6 +2127,10 @@ function renderInterimStep(step) {
   else if (step === 2) downloadInterimPDF();
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// IN-LINE CONTROL REPORT — constants
+// ══════════════════════════════════════════════════════════════════════
+
 const INTERIM_PKG_ITEMS = [
   {key:'neckLabel',    en:'Neck Label · Ense Etiketi'},
   {key:'washLabel',    en:'Wash Instructions · Yıkama Talimatı'},
@@ -2035,6 +2154,9 @@ const INTERIM_CTRL_ITEMS = [
   {key:'collarElasticity', en:'Collar Elasticity · Yaka Esnekliği'},
 ];
 
+// ──────────────────────────────────────────────
+// IN-LINE — form render
+// ──────────────────────────────────────────────
 function renderInterimForm() {
   const ir = state.currentInterim;
   if (!ir) return;
@@ -2049,16 +2171,14 @@ function renderInterimForm() {
   const qcOpts  = [`<option value="">— ${t('— Select —')||'Select'} —</option>`, ...interimQcList.map(n=>`<option value="${n}" ${n===effectiveQc?'selected':''}>${n}</option>`)].join('');
   const supOpts = [`<option value="">— ${t('— Select —')||'Select'} —</option>`, ...interimSupList.map(n=>`<option value="${n}" ${n===effectiveSup?'selected':''}>${n}</option>`)].join('');
 
-  const inputStyle = 'width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none';
-  const taStyle = `${inputStyle};resize:vertical;min-height:80px;font-size:14px;`;
-  const labelStyle = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px;display:block';
+  // CSS classes: .app-input, .app-textarea, .app-select (defined in <style>)
 
   // Packaging as text input rows — bigger textareas
   const pkgRows = INTERIM_PKG_ITEMS.map(item => `
     <tr>
       <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);vertical-align:top;padding-top:12px;min-width:180px">${item.en}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border)">
-        <textarea style="${taStyle};min-height:72px;" oninput="updateInterim(r=>r.pkg['${item.key}']=this.value)" placeholder="">${ir.pkg[item.key]||''}</textarea>
+        <textarea class="app-textarea" oninput="updateInterim(r=>r.pkg['${item.key}']=this.value)" placeholder="">${ir.pkg[item.key]||''}</textarea>
       </td>
     </tr>`).join('');
 
@@ -2067,7 +2187,7 @@ function renderInterimForm() {
     <tr>
       <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);vertical-align:top;padding-top:12px;min-width:180px">${item.en}</td>
       <td style="padding:6px 8px;border-bottom:1px solid var(--border)">
-        <textarea style="${taStyle};min-height:72px;" oninput="updateInterim(r=>r.findings['${item.key}']=this.value)" placeholder="">${ir.findings[item.key]||''}</textarea>
+        <textarea class="app-textarea" oninput="updateInterim(r=>r.findings['${item.key}']=this.value)" placeholder="">${ir.findings[item.key]||''}</textarea>
       </td>
     </tr>`).join('');
 
@@ -2081,23 +2201,23 @@ function renderInterimForm() {
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px">${uiLang==='tr'?'Rapor Bilgileri':'Rapor Bilgileri · Report Info'}</div>
       <div class="grid-2">
-        <div class="field"><label>${uiLang==='tr'?'Müşteri':'Müşteri · Customer'}</label><input value="${ir.customer||''}" readonly style="opacity:0.6;cursor:not-allowed;${inputStyle}"></div>
-        <div class="field"><label>${uiLang==='tr'?'İmalatçı':'İmalatçı · Manufacturer'}</label><input value="${ir.supplier||''}" oninput="updateInterim(r=>r.supplier=this.value)" style="${inputStyle}"></div>
+        <div class="field"><label>${uiLang==='tr'?'Müşteri':'Müşteri · Customer'}</label><input value="${ir.customer||''}" class="app-input" readonly></div>
+        <div class="field"><label>${uiLang==='tr'?'İmalatçı':'İmalatçı · Manufacturer'}</label><input value="${ir.supplier||''}" oninput="updateInterim(r=>r.supplier=this.value)" class="app-input"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label>${t('Sipariş No · Order No')}</label><input value="${ir.orderno||''}" readonly style="opacity:0.6;cursor:not-allowed;${inputStyle}"></div>
-        <div class="field"><label>${t('Model Kodu · Style No')}</label><input value="${ir.styleno||ir.modelNo||''}" oninput="updateInterim(r=>{r.styleno=this.value;r.modelNo=this.value;})" style="${inputStyle}" placeholder=""></div>
+        <div class="field"><label>${t('Sipariş No · Order No')}</label><input value="${ir.orderno||''}" class="app-input" readonly></div>
+        <div class="field"><label>${t('Model Kodu · Style No')}</label><input value="${ir.styleno||ir.modelNo||''}" oninput="updateInterim(r=>{r.styleno=this.value;r.modelNo=this.value;})" class="app-input" placeholder=""></div>
       </div>
-      <div class="field"><label>${uiLang==='tr'?'Model / Kumaş Tanımı':'Model / Fabric Description'}</label><input value="${ir.fabricDesc||''}" oninput="updateInterim(r=>r.fabricDesc=this.value)" style="${inputStyle}" placeholder=""></div>
+      <div class="field"><label>${uiLang==='tr'?'Kumaş Tanımı':'Fabric Description'}</label><input value="${ir.fabricDesc||''}" oninput="updateInterim(r=>r.fabricDesc=this.value)" class="app-input" placeholder=""></div>
       <div class="grid-3">
-        <div class="field"><label>${uiLang==='tr'?'Renk':'Renk · Colour'}</label><input value="${ir.colour||''}" oninput="updateInterim(r=>r.colour=this.value)" style="${inputStyle}"></div>
-        <div class="field"><label>${uiLang==='tr'?'Beden':'Beden · Size'}</label><input value="${ir.size||''}" oninput="updateInterim(r=>r.size=this.value)" style="${inputStyle}" placeholder=""></div>
-        <div class="field"><label>${uiLang==='tr'?'Adet':'Adet · Qty'}</label><input value="${ir.qty||''}" oninput="updateInterim(r=>r.qty=this.value)" type="number" style="${inputStyle}"></div>
+        <div class="field"><label>${uiLang==='tr'?'Renk':'Renk · Colour'}</label><input value="${ir.colour||''}" oninput="updateInterim(r=>r.colour=this.value)" class="app-input"></div>
+        <div class="field"><label>${uiLang==='tr'?'Beden':'Beden · Size'}</label><input value="${ir.size||''}" oninput="updateInterim(r=>r.size=this.value)" class="app-input" placeholder=""></div>
+        <div class="field"><label>${uiLang==='tr'?'Adet':'Adet · Qty'}</label><input value="${ir.qty||''}" oninput="updateInterim(r=>r.qty=this.value)" type="number" class="app-input"></div>
       </div>
       <div class="grid-3">
-        <div class="field"><label>Tarih · Date <span style="font-size:10px;color:var(--pass)">(auto)</span></label><input value="${ir.date||''}" readonly style="opacity:0.7;cursor:default;${inputStyle}"></div>
-        <div class="field"><label>Saat · Time <span style="font-size:10px;color:var(--pass)">(auto)</span></label><input value="${ir.time||''}" readonly style="opacity:0.7;cursor:default;${inputStyle}"></div>
-        <div class="field"><label>Kontrol No #</label><input value="${ir.interimNo||1}" readonly style="opacity:0.7;cursor:default;${inputStyle}"></div>
+        <div class="field"><label>Tarih · Date <span style="font-size:10px;color:var(--pass)">(auto)</span></label><input value="${ir.date||''}" class="app-input auto-field" readonly></div>
+        <div class="field"><label>Saat · Time <span style="font-size:10px;color:var(--pass)">(auto)</span></label><input value="${ir.time||''}" class="app-input auto-field" readonly></div>
+        <div class="field"><label>Kontrol No #</label><input value="${ir.interimNo||1}" class="app-input auto-field" readonly></div>
       </div>
     </div>
 
@@ -2120,7 +2240,7 @@ function renderInterimForm() {
     <!-- AÇIKLAMA -->
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:8px">${uiLang==='tr'?'Açıklama':'Açıklama · Notes'}</div>
-      <textarea style="${taStyle};min-height:72px" oninput="updateInterim(r=>r.aciklama=this.value)" placeholder="">${ir.aciklama||''}</textarea>
+      <textarea class="app-textarea" oninput="updateInterim(r=>r.aciklama=this.value)" placeholder="">${ir.aciklama||''}</textarea>
     </div>
 
     <!-- SIGNATURES -->
@@ -2129,11 +2249,11 @@ function renderInterimForm() {
       <div class="grid-2">
         <div class="field">
           <label>${t('Sorumlu · Supervisor')}</label>
-          <select style="width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:#111;outline:none" onchange="updateInterim(r=>r.supervisorName=this.value)">${supOpts}</select>
+          <select class="app-select" onchange="updateInterim(r=>r.supervisorName=this.value)">${supOpts}</select>
         </div>
         <div class="field">
           <label>${t('Kalite Kontrolcü · QC Name')}</label>
-          <select style="width:100%;background:#f5f5f5;border:1px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:inherit;font-size:14px;color:#111;outline:none" onchange="updateInterim(r=>r.qcName=this.value)">${qcOpts}</select>
+          <select class="app-select" onchange="updateInterim(r=>r.qcName=this.value)">${qcOpts}</select>
         </div>
       </div>
     </div>
@@ -2179,6 +2299,9 @@ function renderInterimForm() {
   `);
 }
 
+// ──────────────────────────────────────────────
+// IN-LINE — actions (camera, photos, delete)
+// ──────────────────────────────────────────────
 function setInterimPkg(key, val) {
   const ir = state.currentInterim;
   if (!ir) return;
@@ -2313,6 +2436,8 @@ function _refreshInterimPhotoGrid() {
 }
 
 
+// IMPORTANT: Print layout is sensitive — avoid changing widths/heights
+// without testing PDF export on A4 portrait (210mm).
 function buildInterimReportHTML(ir) {
   const logoSrc = typeof KOZAN_JPEG_LOGO !== 'undefined' ? KOZAN_JPEG_LOGO : '';
   const logoHTML = logoSrc
@@ -2392,16 +2517,18 @@ function buildInterimReportHTML(ir) {
 <!-- ORDER INFO -->
 <table style="margin-bottom:2px;table-layout:fixed;width:100%;border-collapse:collapse">
   <tr>
-    <td style="width:22%;border:1px solid #d4d4d4"><div class="info-cell"><label>Müşteri · Customer</label><span>${ir.customer||'—'}</span></div></td>
-    <td style="width:22%;border:1px solid #d4d4d4"><div class="info-cell"><label>İmalatçı · Manufacturer</label><span>${ir.supplier||'KOZAN'}</span></div></td>
-    <td style="width:22%;border:1px solid #d4d4d4"><div class="info-cell"><label>Sipariş No · Order No</label><span>${ir.orderno||'—'}</span></div></td>
-    <td style="width:34%;border:1px solid #d4d4d4"><div class="info-cell"><label>Kumaş · Fabric Desc.</label><span>${ir.fabricDesc||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Müşteri · Customer</label><span>${ir.customer||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>İmalatçı · Manufacturer</label><span>${ir.supplier||'KOZAN'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Sipariş No · Order No</label><span>${ir.orderno||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Kumaş · Fabric Desc.</label><span>${ir.fabricDesc||'—'}</span></div></td>
+    <td style="width:20%;border:1px solid #d4d4d4"><div class="info-cell"><label>Kontrol No</label><span>#${ir.interimNo}</span></div></td>
   </tr>
   <tr>
     <td style="border:1px solid #d4d4d4"><div class="info-cell"><label>Renk · Colour</label><span>${ir.colour||'—'}</span></div></td>
     <td style="border:1px solid #d4d4d4"><div class="info-cell"><label>Model Kodu · Style No</label><span>${styleno}</span></div></td>
     <td style="border:1px solid #d4d4d4"><div class="info-cell"><label>Beden · Size</label><span>${ir.size||'—'}</span></div></td>
-    <td style="border:1px solid #d4d4d4"><div class="info-cell"><label>Adet · Qty &nbsp;·&nbsp; Kontrol No</label><span>${ir.qty||'—'} &nbsp;·&nbsp; #${ir.interimNo}</span></div></td>
+    <td style="border:1px solid #d4d4d4"><div class="info-cell"><label>Adet · Qty</label><span>${ir.qty||'—'}</span></div></td>
+    <td style="border:1px solid #d4d4d4"><div class="info-cell"><label>&nbsp;</label><span>&nbsp;</span></div></td>
   </tr>
 </table>
 
@@ -2464,6 +2591,15 @@ function buildInterimReportHTML(ir) {
 
 
 
+// ══════════════════════════════════════════════════════════════════════
+// PDF EXPORT ENGINE
+// IMPORTANT: Per-page capture — each .pdf-page div is captured as a
+// separate image then added as its own jsPDF page.
+// ⚠️  Do NOT switch back to the "slice one tall canvas" approach —
+//     it causes content to split mid-element across page boundaries.
+// ⚠️  Keep iframe width at 794px (≈ A4 at 96dpi) and wait ≥1000ms
+//     for fonts/images to load before capturing.
+// ══════════════════════════════════════════════════════════════════════
 // ── SHARED PDF DOWNLOAD ENGINE ───────────────────────────────────────
 // Renders HTML into a hidden iframe, captures each .pdf-page div
 // as a separate jsPDF page — guarantees no content ever splits.
@@ -2583,6 +2719,10 @@ function openReport(id) {
 // MANAGE PEOPLE
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// MANAGE PEOPLE UI
+// ══════════════════════════════════════════════════════════════════════
+
 function showManagePeople() {
   state.screen = 'people';
   showHomeBtn();
@@ -2615,7 +2755,7 @@ function showManagePeople() {
     </div>
     ${showDefault ? defaultSelector(key, people) : ''}
     <div style="display:flex;gap:8px;margin-bottom:4px;margin-top:8px">
-      <input id="add-${key}" placeholder="" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none">
+      <input id="add-${key}" placeholder="" class="app-input" style="flex:1">
       <button class="btn btn-primary btn-sm" onclick="${saveFn}('${key}')">+ ${t('Add')}</button>
     </div>`;
 
@@ -2637,19 +2777,19 @@ function showManagePeople() {
 
     <div class="divider" style="margin:20px 0 8px"></div>
     <div style="font-size:13px;font-weight:600;color:#a78bfa;margin-bottom:4px">${t('⚡ In-Line Control Report / Ara Kontrol')}</div>
-    ${roleSection('interim-qc',t('QC Name · Kalite Kontrolcü (In-Line)'), ip.qc, 'addInterimPerson', 'deleteInterimPerson', true)}
+    ${roleSection('interim-qc',t('QC Name · Kalite Kontrolcü (In-Line)'), ip.qc, 'addInterimPerson', 'deleteInterimPerson')}
     <div class="divider"></div>
-    ${roleSection('interim-supervisor',t('Sorumlu · Supervisor (In-Line)'), ip.supervisor, 'addInterimPerson', 'deleteInterimPerson', true)}
+    ${roleSection('interim-supervisor',t('Sorumlu · Supervisor (In-Line)'), ip.supervisor, 'addInterimPerson', 'deleteInterimPerson')}
 
     <div class="divider" style="margin:20px 0 8px"></div>
     <div style="font-size:13px;font-weight:600;color:var(--pass);margin-bottom:4px">${t('✅ Final Checklist · Son Kontrol Listesi')}</div>
-    ${roleSection('cl-checkedBy', t('Checklist Staff · Kontrol Personeli') + ' <span style="font-size:10px;font-weight:400;color:var(--muted)">(Checked By / Kontrol Eden)</span>', cp.checkedBy, 'addChecklistPerson', 'deleteChecklistPerson', true)}
+    ${roleSection('cl-checkedBy', t('Checklist Staff · Kontrol Personeli') + ' <span style="font-size:10px;font-weight:400;color:var(--muted)">(Checked By / Kontrol Eden)</span>', cp.checkedBy, 'addChecklistPerson', 'deleteChecklistPerson')}
     <div class="divider"></div>
-    ${roleSection('cl-packingSupv',t('Packing Supervisor · Paketleme Sorumlusu'), cp.packingSupv, 'addChecklistPerson', 'deleteChecklistPerson', true)}
+    ${roleSection('cl-packingSupv',t('Packing Supervisor · Paketleme Sorumlusu'), cp.packingSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
     <div class="divider"></div>
-    ${roleSection('cl-qcSupv',t('QC Supervisor · QC Sorumlusu'), cp.qcSupv, 'addChecklistPerson', 'deleteChecklistPerson', true)}
+    ${roleSection('cl-qcSupv',t('QC Supervisor · QC Sorumlusu'), cp.qcSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
     <div class="divider"></div>
-    ${roleSection('cl-warehouseSupv',t('Warehouse Supervisor · Depo Sorumlusu'), cp.warehouseSupv, 'addChecklistPerson', 'deleteChecklistPerson', true)}
+    ${roleSection('cl-warehouseSupv',t('Warehouse Supervisor · Depo Sorumlusu'), cp.warehouseSupv, 'addChecklistPerson', 'deleteChecklistPerson')}
 
     <div style="height:20px"></div>
   `);
@@ -2728,6 +2868,10 @@ function deleteChecklistPerson(rawKey, idx) {
 // MANAGE CUSTOMERS
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// MANAGE CUSTOMERS UI
+// ══════════════════════════════════════════════════════════════════════
+
 function showManageCustomers() {
   state.screen = 'customers';
   showHomeBtn();
@@ -2742,7 +2886,7 @@ function showManageCustomers() {
         </div>`).join('') : `<div style="color:var(--muted);font-size:13px;padding:6px 0">${t('No customers added yet.')}</div>`}
     </div>
     <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="add-customer" placeholder="" style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-family:inherit;font-size:14px;color:var(--text);outline:none">
+      <input id="add-customer" placeholder="" class="app-input" style="flex:1">
       <button class="btn btn-primary btn-sm" onclick="addCustomer()">+ ${t('Add')}</button>
     </div>
     <div style="height:20px"></div>
@@ -2769,9 +2913,6 @@ function deleteCustomer(idx) {
 // WIZARD SHELL
 // ══════════════════════════════════════════════════════════════════════
 
-function startNewInspection() {
-  startNewOrder();
-}
 
 function stepsHTML(current) {
   return `<div class="steps">${STEP_LABELS.map((l,i) => {
@@ -2804,6 +2945,9 @@ function customerOpts(selected) {
   return opts.join('');
 }
 
+// ──────────────────────────────────────────────
+// FINAL REPORT — wizard steps
+// ──────────────────────────────────────────────
 function renderStep1(r) {
   render(`
     ${stepsHTML(1)}
@@ -3196,6 +3340,10 @@ function renderPhotoGrid() {
 // STEP 5: GENERAL INFO
 // ══════════════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════════════
+// FINAL REPORT — wizard helpers
+// ══════════════════════════════════════════════════════════════════════
+
 function peopleOpts(key, selected) {
   const list = loadPeople()[key] || [];
   const defaults = loadPeopleDefaults();
@@ -3372,6 +3520,9 @@ function renderStep6(r) {
   document.getElementById('print-area').innerHTML = reportHTML;
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// IMPORTANT: Print layout is sensitive — avoid changing widths/heights
+// without testing PDF export on A4 portrait (210mm).
 // ══════════════════════════════════════════════════════════════════════
 async function buildPrintHTML() {
   const r = state.currentReport;
@@ -3715,17 +3866,6 @@ async function downloadFinalPDF() {
 }
 
 // ── INTERNAL: inject snippet, open in new tab ────────────────────────
-function _openWindow(printContent, inject) {
-  const full = printContent.replace('</body>', inject + '</body>');
-  const url  = URL.createObjectURL(new Blob([full], { type: 'text/html;charset=utf-8' }));
-  const win  = window.open(url, '_blank');
-  if (!win) {
-    const a = document.createElement('a');
-    a.href = url; a.target = '_blank';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  }
-  setTimeout(() => URL.revokeObjectURL(url), 120000);
-}
 
 
 // ══════════════════════════════════════════════════════════════════════
@@ -3797,6 +3937,10 @@ const sb = {
     return `${SUPABASE_URL}/storage/v1${signedURL}`;
   },
 };
+
+// ══════════════════════════════════════════════════════════════════════
+// SUPABASE — serialisation & load functions
+// ══════════════════════════════════════════════════════════════════════
 
 function reportToRow(r) {
   return {
