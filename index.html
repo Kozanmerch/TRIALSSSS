@@ -240,6 +240,72 @@ body {
   cursor: pointer; font-size: 13px; display: flex;
   align-items: center; justify-content: center;
 }
+/* ── Camera modal — fullscreen ── */
+.cam-modal {
+  display:none; position:fixed; inset:0; z-index:2000;
+  background:#000; flex-direction:column;
+}
+.cam-modal.open { display:flex; }
+.cam-modal video {
+  width:100%; flex:1; object-fit:cover; display:block;
+}
+.cam-modal canvas { display:none; }
+/* ── Editor mode (crop/rotate) ── */
+.cam-editor {
+  display:none; position:fixed; inset:0; z-index:2001;
+  background:#111; flex-direction:column; align-items:center;
+}
+.cam-editor.open { display:flex; }
+.cam-editor-img {
+  flex:1; width:100%; display:flex; align-items:center; justify-content:center;
+  overflow:hidden; position:relative;
+}
+.cam-editor-img canvas {
+  max-width:100%; max-height:100%;
+  display:block; transition:transform 0.2s;
+  touch-action:none; cursor:crosshair;
+}
+.cam-toolbar {
+  width:100%; background:#1a1a1a; padding:10px 16px;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  flex-wrap:wrap;
+}
+.cam-btn {
+  padding:8px 16px; border-radius:var(--r-sm); border:1.5px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.08); color:#fff; font-family:inherit;
+  font-size:14px; cursor:pointer; display:flex; align-items:center; gap:6px;
+  white-space:nowrap;
+}
+.cam-btn:active { background:rgba(255,255,255,0.18); }
+.cam-btn.primary { background:var(--accent2); border-color:var(--accent2); }
+.cam-btn.danger  { background:#dc2626; border-color:#dc2626; }
+.cam-shutter {
+  width:72px; height:72px; border-radius:50%;
+  background:#fff; border:5px solid rgba(255,255,255,0.4);
+  cursor:pointer; flex-shrink:0;
+  transition:transform 0.1s, opacity 0.1s;
+}
+.cam-shutter:active { transform:scale(0.9); opacity:0.8; }
+.cam-top-bar {
+  width:100%; background:rgba(0,0,0,0.6); padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:absolute; top:0; left:0; z-index:10;
+}
+.cam-bottom-bar {
+  width:100%; background:rgba(0,0,0,0.6); padding:16px;
+  display:flex; align-items:center; justify-content:center; gap:24px;
+}
+/* Crop rectangle overlay */
+.crop-overlay {
+  position:absolute; border:2px solid #fff;
+  box-shadow:0 0 0 9999px rgba(0,0,0,0.5);
+  cursor:move; touch-action:none;
+}
+.crop-handle {
+  position:absolute; width:14px; height:14px;
+  background:#fff; border:2px solid #333; border-radius:2px;
+}
+/* Old inline camera — keep for fallback */
 .camera-preview {
   width: 100%; aspect-ratio: 4/3; background: #000;
   border-radius: var(--radius); overflow: hidden; position: relative;
@@ -250,8 +316,7 @@ body {
 .camera-overlay {
   position: absolute; inset: 0;
   border: 2px solid rgba(79,142,247,0.4);
-  border-radius: var(--radius);
-  pointer-events: none;
+  border-radius: var(--radius); pointer-events: none;
 }
 .camera-overlay::before, .camera-overlay::after {
   content: ''; position: absolute;
@@ -427,6 +492,51 @@ body {
 </style>
 </head>
 <body>
+<!-- ══ FULLSCREEN CAMERA MODAL ══════════════════════════════════ -->
+<div class="cam-modal" id="cam-modal">
+  <div class="cam-top-bar">
+    <button class="cam-btn danger" onclick="camClose()">✕</button>
+    <span id="cam-label-display" style="color:#fff;font-size:14px;font-weight:600;max-width:60%;text-align:center"></span>
+    <button class="cam-btn" onclick="camFlip()">🔄</button>
+  </div>
+  <video id="cam-video" autoplay playsinline muted style="flex:1;width:100%;object-fit:cover;display:block"></video>
+  <canvas id="cam-snap" style="display:none"></canvas>
+  <div class="cam-bottom-bar">
+    <label class="cam-btn" style="cursor:pointer">
+      📁
+      <input type="file" accept="image/*" multiple style="display:none" onchange="camUpload(this)">
+    </label>
+    <button class="cam-shutter" onclick="camSnap()"></button>
+    <div style="width:60px"></div>
+  </div>
+</div>
+
+<!-- ══ PHOTO EDITOR MODAL (crop + rotate) ════════════════════════ -->
+<div class="cam-editor" id="cam-editor">
+  <div style="width:100%;background:rgba(0,0,0,0.8);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <button class="cam-btn danger" onclick="editorDiscard()">✕</button>
+    <span style="color:#fff;font-size:14px;font-weight:600">Edit Photo</span>
+    <button class="cam-btn primary" onclick="editorSave()">✓ Use</button>
+  </div>
+  <div class="cam-editor-img" id="cam-editor-img">
+    <canvas id="editor-canvas" style="max-width:100%;max-height:100%;display:block;touch-action:none"></canvas>
+    <div class="crop-overlay" id="crop-overlay" style="display:none">
+      <div class="crop-handle" style="top:-7px;left:-7px;cursor:nw-resize" data-handle="tl"></div>
+      <div class="crop-handle" style="top:-7px;right:-7px;cursor:ne-resize" data-handle="tr"></div>
+      <div class="crop-handle" style="bottom:-7px;left:-7px;cursor:sw-resize" data-handle="bl"></div>
+      <div class="crop-handle" style="bottom:-7px;right:-7px;cursor:se-resize" data-handle="br"></div>
+    </div>
+  </div>
+  <div class="cam-toolbar">
+    <button class="cam-btn" onclick="editorRotate(-90)">↺ L</button>
+    <button class="cam-btn" onclick="editorRotate(90)">↻ R</button>
+    <button class="cam-btn" onclick="editorFlipH()">↔</button>
+    <button class="cam-btn" onclick="editorFlipV()">↕</button>
+    <button class="cam-btn" id="crop-toggle-btn" onclick="editorToggleCrop()">✂ Crop</button>
+    <button class="cam-btn" onclick="editorReset()">↺ Reset</button>
+  </div>
+</div>
+
 <div class="app">
   <div class="topbar">
     <div class="topbar-logo">
@@ -708,7 +818,7 @@ const TR = {
   'Rapor Bilgileri · Report Info':'Rapor Bilgileri',
   'Müşteri · Customer':'Müşteri','İmalatçı · Manufacturer':'İmalatçı',
   'Sipariş No · Order No':'Sipariş No','Model Kodu · Style No':'Model Kodu',
-  'Kumaş Tanımı · Fabric Description':'Kumaş Tanımı',
+  'Model / Kumaş Tanımı · Fabric Description':'Model / Kumaş Tanımı',
   'Renk · Colour':'Renk','Beden · Size':'Beden','Adet · Qty':'Adet',
   'Tarih · Date':'Tarih','Saat · Time':'Saat','Kontrol No #':'Kontrol No',
   '📦 Paketleme · Packaging':'📦 Paketleme',
@@ -1123,6 +1233,300 @@ function normDefectPhotos(d) {
 // ══════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════
+// FULLSCREEN CAMERA + PHOTO EDITOR ENGINE
+// One shared modal used by final report, in-line report, and any future
+// photo-taking flow. Call camOpen(onSaveFn, labelText) to use.
+// ══════════════════════════════════════════════════════════════════════
+
+const camState = {
+  stream: null,
+  facingMode: 'environment',
+  onSave: null,          // callback(dataURL) when user confirms
+  label: '',
+  // Editor state
+  srcImage: null,        // original Image object
+  rotation: 0,           // degrees: 0/90/180/270
+  flipH: false,
+  flipV: false,
+  cropActive: false,
+  cropRect: null,        // {x,y,w,h} in display px
+  dragState: null,
+};
+
+// ── Open the camera ──────────────────────────────────────────────────
+async function camOpen(onSave, labelText) {
+  camState.onSave = onSave;
+  camState.label  = labelText || '';
+  const modal = document.getElementById('cam-modal');
+  const lbl   = document.getElementById('cam-label-display');
+  if (lbl) lbl.textContent = labelText || '';
+  modal.classList.add('open');
+  await camStartStream();
+}
+
+async function camStartStream() {
+  if (camState.stream) { camState.stream.getTracks().forEach(t => t.stop()); camState.stream = null; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: camState.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    camState.stream = stream;
+    const video = document.getElementById('cam-video');
+    if (video) { video.srcObject = stream; video.play(); }
+  } catch(e) {
+    document.getElementById('cam-modal').classList.remove('open');
+    toast(t('Camera not available.'));
+  }
+}
+
+function camClose() {
+  if (camState.stream) { camState.stream.getTracks().forEach(t => t.stop()); camState.stream = null; }
+  const video = document.getElementById('cam-video');
+  if (video) { video.pause(); video.srcObject = null; }
+  document.getElementById('cam-modal').classList.remove('open');
+}
+
+async function camFlip() {
+  camState.facingMode = camState.facingMode === 'environment' ? 'user' : 'environment';
+  await camStartStream();
+}
+
+function camSnap() {
+  const video = document.getElementById('cam-video');
+  const canvas = document.getElementById('cam-snap');
+  if (!video || !canvas) return;
+  let w = video.videoWidth || 1280, h = video.videoHeight || 720;
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+  const url = canvas.toDataURL('image/jpeg', 0.92);
+  camClose();
+  editorOpen(url);
+}
+
+async function camUpload(input) {
+  camClose();
+  const files = Array.from(input.files);
+  for (const file of files) {
+    await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => { editorOpen(e.target.result, files.length > 1 ? resolve : null); resolve(); };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+// ── Photo editor ─────────────────────────────────────────────────────
+function editorOpen(dataURL, onDone) {
+  camState.rotation  = 0;
+  camState.flipH     = false;
+  camState.flipV     = false;
+  camState.cropActive = false;
+  camState.cropRect  = null;
+  camState.dragState = null;
+  const btn = document.getElementById('crop-toggle-btn');
+  if (btn) btn.style.background = '';
+
+  const img = new Image();
+  img.onload = () => {
+    camState.srcImage = img;
+    document.getElementById('cam-editor').classList.add('open');
+    editorDraw();
+    editorSetupCropDrag();
+  };
+  img.src = dataURL;
+}
+
+function editorDraw() {
+  const canvas = document.getElementById('editor-canvas');
+  if (!canvas || !camState.srcImage) return;
+  const img = camState.srcImage;
+  const rot = ((camState.rotation % 360) + 360) % 360;
+  const swapped = rot === 90 || rot === 270;
+  const srcW = img.naturalWidth, srcH = img.naturalHeight;
+  const drawW = swapped ? srcH : srcW;
+  const drawH = swapped ? srcW : srcH;
+
+  // Fit to container
+  const container = document.getElementById('cam-editor-img');
+  const maxW = container.clientWidth  || window.innerWidth;
+  const maxH = container.clientHeight || (window.innerHeight - 160);
+  const scale = Math.min(maxW / drawW, maxH / drawH, 1);
+  canvas.width  = Math.round(drawW * scale);
+  canvas.height = Math.round(drawH * scale);
+  canvas.style.width  = canvas.width  + 'px';
+  canvas.style.height = canvas.height + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(rot * Math.PI / 180);
+  if (camState.flipH) ctx.scale(-1, 1);
+  if (camState.flipV) ctx.scale(1, -1);
+  ctx.drawImage(img, -drawW * scale / 2, -drawH * scale / 2, drawW * scale, drawH * scale);
+  ctx.restore();
+
+  // Draw crop overlay
+  const overlay = document.getElementById('crop-overlay');
+  if (camState.cropActive && camState.cropRect) {
+    const r = camState.cropRect;
+    const cRect = canvas.getBoundingClientRect();
+    const edRect = document.getElementById('cam-editor-img').getBoundingClientRect();
+    overlay.style.display = 'block';
+    overlay.style.left   = (cRect.left - edRect.left + r.x) + 'px';
+    overlay.style.top    = (cRect.top  - edRect.top  + r.y) + 'px';
+    overlay.style.width  = r.w + 'px';
+    overlay.style.height = r.h + 'px';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+function editorRotate(deg) {
+  camState.rotation = (camState.rotation + deg + 360) % 360;
+  camState.cropRect = null;
+  editorDraw();
+}
+
+function editorFlipH() { camState.flipH = !camState.flipH; editorDraw(); }
+function editorFlipV() { camState.flipV = !camState.flipV; editorDraw(); }
+
+function editorReset() {
+  camState.rotation = 0; camState.flipH = false; camState.flipV = false;
+  camState.cropActive = false; camState.cropRect = null;
+  const btn = document.getElementById('crop-toggle-btn');
+  if (btn) btn.style.background = '';
+  editorDraw();
+}
+
+function editorToggleCrop() {
+  camState.cropActive = !camState.cropActive;
+  const btn = document.getElementById('crop-toggle-btn');
+  if (btn) btn.style.background = camState.cropActive ? 'var(--accent2)' : '';
+  if (camState.cropActive && !camState.cropRect) {
+    const canvas = document.getElementById('editor-canvas');
+    const p = 20;
+    camState.cropRect = { x: p, y: p, w: canvas.width - p*2, h: canvas.height - p*2 };
+  }
+  if (!camState.cropActive) camState.cropRect = null;
+  editorDraw();
+}
+
+function editorSetupCropDrag() {
+  const overlay = document.getElementById('crop-overlay');
+  const edArea  = document.getElementById('cam-editor-img');
+  if (!overlay || !edArea) return;
+
+  function getPos(e) {
+    const touch = e.touches ? e.touches[0] : e;
+    const rect = edArea.getBoundingClientRect();
+    const canRect = document.getElementById('editor-canvas').getBoundingClientRect();
+    return {
+      x: touch.clientX - canRect.left,
+      y: touch.clientY - canRect.top
+    };
+  }
+
+  function onStart(e) {
+    if (!camState.cropActive || !camState.cropRect) return;
+    const handle = e.target.dataset?.handle;
+    const pos = getPos(e);
+    camState.dragState = { handle: handle || 'move', startPos: pos, startRect: { ...camState.cropRect } };
+    e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!camState.dragState || !camState.cropRect) return;
+    const pos = getPos(e);
+    const dx = pos.x - camState.dragState.startPos.x;
+    const dy = pos.y - camState.dragState.startPos.y;
+    const sr = camState.dragState.startRect;
+    const canvas = document.getElementById('editor-canvas');
+    const cw = canvas.width, ch = canvas.height;
+    let { x, y, w, h } = sr;
+
+    if (camState.dragState.handle === 'move') {
+      x = Math.max(0, Math.min(cw - w, sr.x + dx));
+      y = Math.max(0, Math.min(ch - h, sr.y + dy));
+    } else {
+      if (camState.dragState.handle.includes('r')) { w = Math.max(40, Math.min(cw - x, sr.w + dx)); }
+      if (camState.dragState.handle.includes('l')) { const nx = Math.max(0, Math.min(sr.x + sr.w - 40, sr.x + dx)); w = sr.x + sr.w - nx; x = nx; }
+      if (camState.dragState.handle.includes('b')) { h = Math.max(40, Math.min(ch - y, sr.h + dy)); }
+      if (camState.dragState.handle.includes('t')) { const ny = Math.max(0, Math.min(sr.y + sr.h - 40, sr.y + dy)); h = sr.y + sr.h - ny; y = ny; }
+    }
+    camState.cropRect = { x, y, w, h };
+    editorDraw();
+    e.preventDefault();
+  }
+
+  function onEnd() { camState.dragState = null; }
+
+  overlay.addEventListener('mousedown', onStart);
+  overlay.addEventListener('touchstart', onStart, { passive: false });
+  edArea.addEventListener('mousemove', onMove);
+  edArea.addEventListener('touchmove', onMove, { passive: false });
+  edArea.addEventListener('mouseup', onEnd);
+  edArea.addEventListener('touchend', onEnd);
+
+  // Handle click on handles
+  overlay.querySelectorAll('.crop-handle').forEach(h => {
+    h.addEventListener('mousedown', onStart);
+    h.addEventListener('touchstart', onStart, { passive: false });
+  });
+}
+
+async function editorSave() {
+  const srcCanvas = document.getElementById('editor-canvas');
+  if (!srcCanvas || !camState.srcImage) return;
+
+  // Render at full resolution
+  const img = camState.srcImage;
+  const rot = ((camState.rotation % 360) + 360) % 360;
+  const swapped = rot === 90 || rot === 270;
+  const fullW = swapped ? img.naturalHeight : img.naturalWidth;
+  const fullH = swapped ? img.naturalWidth  : img.naturalHeight;
+
+  const full = document.createElement('canvas');
+  full.width = fullW; full.height = fullH;
+  const ctx = full.getContext('2d');
+  ctx.save();
+  ctx.translate(fullW / 2, fullH / 2);
+  ctx.rotate(rot * Math.PI / 180);
+  if (camState.flipH) ctx.scale(-1, 1);
+  if (camState.flipV) ctx.scale(1, -1);
+  ctx.drawImage(img, -fullW / 2, -fullH / 2, fullW, fullH);
+  ctx.restore();
+
+  let result = full;
+
+  // Apply crop if active
+  if (camState.cropActive && camState.cropRect) {
+    const r = camState.cropRect;
+    const scale = fullW / srcCanvas.width;
+    const cx = Math.round(r.x * scale), cy = Math.round(r.y * scale);
+    const cw = Math.round(r.w * scale), ch = Math.round(r.h * scale);
+    const cropped = document.createElement('canvas');
+    cropped.width = cw; cropped.height = ch;
+    cropped.getContext('2d').drawImage(full, cx, cy, cw, ch, 0, 0, cw, ch);
+    result = cropped;
+  }
+
+  document.getElementById('cam-editor').classList.remove('open');
+
+  const compressed = await compressImage(result.toDataURL('image/jpeg', 0.92));
+  if (typeof camState.onSave === 'function') {
+    camState.onSave(compressed);
+  }
+}
+
+function editorDiscard() {
+  document.getElementById('cam-editor').classList.remove('open');
+  camState.srcImage = null;
+  // Re-open camera if it was a camera shot (not upload)
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════════════════════════════════════
 
@@ -1292,6 +1696,7 @@ function showDashboard() {
     if (!confirm(msg)) return;
   }
   stopCamera();
+  camClose();
   _interimCamOpen = false;
   state.screen = 'dashboard';
   state.currentReport = null;
@@ -2208,7 +2613,7 @@ function renderInterimForm() {
         <div class="field"><label>${t('Sipariş No · Order No')}</label><input value="${ir.orderno||''}" class="app-input" readonly></div>
         <div class="field"><label>${t('Model Kodu · Style No')}</label><input value="${ir.styleno||ir.modelNo||''}" oninput="updateInterim(r=>{r.styleno=this.value;r.modelNo=this.value;})" class="app-input" placeholder=""></div>
       </div>
-      <div class="field"><label>${uiLang==='tr'?'Kumaş Tanımı':'Fabric Description'}</label><input value="${ir.fabricDesc||''}" oninput="updateInterim(r=>r.fabricDesc=this.value)" class="app-input" placeholder=""></div>
+      <div class="field"><label>${uiLang==='tr'?'Model / Kumaş Tanımı':'Model / Fabric Description'}</label><input value="${ir.fabricDesc||''}" oninput="updateInterim(r=>r.fabricDesc=this.value)" class="app-input" placeholder=""></div>
       <div class="grid-3">
         <div class="field"><label>${uiLang==='tr'?'Renk':'Renk · Colour'}</label><input value="${ir.colour||''}" oninput="updateInterim(r=>r.colour=this.value)" class="app-input"></div>
         <div class="field"><label>${uiLang==='tr'?'Beden':'Beden · Size'}</label><input value="${ir.size||''}" oninput="updateInterim(r=>r.size=this.value)" class="app-input" placeholder=""></div>
@@ -2262,19 +2667,13 @@ function renderInterimForm() {
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:8px">${t('📸 Fotoğraflar · Photos')}</div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:10px">${t('Photos will appear on page 2 of the PDF.')}</p>
-      <div class="camera-preview" id="interim-camera-wrap" style="display:none">
-        <video id="interim-camera-video" autoplay playsinline muted></video>
-        <div class="camera-overlay"></div>
-        <canvas id="interim-snap-canvas" style="display:none"></canvas>
-      </div>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-        <button class="btn btn-primary" id="interim-cam-btn" onclick="toggleInterimCamera()" style="flex:1">📷 ${t('Open Camera')}</button>
+        <button class="btn btn-primary" id="interim-cam-btn" onclick="camOpen(url=>{updateInterim(r=>{if(!r.photos)r.photos=[];r.photos.push({url,label:''});});_refreshInterimPhotoGrid();toast(t('📸 Photo saved'));}, '')" style="flex:1">📷 ${t('Open Camera')}</button>
         <label class="btn btn-ghost" style="flex:1;cursor:pointer;text-align:center">
           📁 ${t('Upload Photos')}
           <input type="file" accept="image/*" multiple style="display:none" onchange="addInterimPhotos(this)">
         </label>
       </div>
-      <button id="interim-shutter" onclick="takeInterimPhoto()" style="display:none;width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid var(--accent);cursor:pointer;margin:0 auto 10px;transition:transform 0.1s"></button>
       <div class="photo-grid" id="interim-photo-grid">
         ${(ir.photos||[]).map((p,i)=>`
           <div class="photo-thumb" style="position:relative">
@@ -2320,15 +2719,28 @@ function setInterimPkg(key, val) {
 async function addInterimPhotos(input) {
   const files = Array.from(input.files);
   if (!files.length) return;
+  // Single file → open editor for crop/rotate
+  if (files.length === 1) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      camState.onSave = async url => {
+        const compressed = await compressImage(url);
+        updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url: compressed, label: '' }); });
+        _refreshInterimPhotoGrid();
+        toast(t('📸 Photo saved'));
+      };
+      editorOpen(e.target.result);
+    };
+    reader.readAsDataURL(files[0]);
+    return;
+  }
+  // Multiple files → compress and add directly
   for (const file of files) {
     const reader = new FileReader();
     await new Promise(resolve => {
       reader.onload = async e => {
         const compressed = await compressImage(e.target.result);
-        updateInterim(r => {
-          if (!r.photos) r.photos = [];
-          r.photos.push({ url: compressed });
-        });
+        updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url: compressed, label: '' }); });
         resolve();
       };
       reader.readAsDataURL(file);
@@ -2343,75 +2755,16 @@ function deleteInterimPhoto(idx) {
   _refreshInterimPhotoGrid();
 }
 
-// ── INTERIM CAMERA ───────────────────────────────────────────────────
-let _interimCamOpen = false;
-
-async function toggleInterimCamera() {
-  if (_interimCamOpen) {
-    stopInterimCamera();
-    return;
-  }
-  const wrap = qs('#interim-camera-wrap');
-  const btn  = qs('#interim-cam-btn');
-  const shutter = qs('#interim-shutter');
-  if (!wrap) return;
-
-  try {
-    // Always request a fresh stream — permission is already granted after first time
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-    state.cameraStream = stream;
-    const video = qs('#interim-camera-video');
-    if (video) video.srcObject = stream;
-    wrap.style.display = '';
-    if (shutter) { shutter.style.display = 'block'; shutter.style.margin = '0 auto 10px'; }
-    if (btn) btn.textContent = t('✕ Close Camera');
-    _interimCamOpen = true;
-  } catch(_) {
-    wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px">${t('Camera not available.')}<br>${t('Please upload photos from your device.')}</div>`;
-    wrap.style.display = '';
-  }
+// ── INTERIM CAMERA — now uses shared camOpen() engine ─────────────────
+let _interimCamOpen = false; // kept for compat, no longer used for UI
+function toggleInterimCamera() {
+  // Backwards compat — not called anymore; camera button now calls camOpen directly
 }
-
 function stopInterimCamera() {
-  // Fully stop the camera stream and turn off the indicator light
-  if (state.cameraStream) {
-    state.cameraStream.getTracks().forEach(t => t.stop());
-    state.cameraStream = null;
-  }
-  const video = qs('#interim-camera-video');
-  if (video) { video.pause(); video.srcObject = null; }
-  const wrap = qs('#interim-camera-wrap');
-  const btn  = qs('#interim-cam-btn');
-  const shutter = qs('#interim-shutter');
-  if (wrap) wrap.style.display = 'none';
-  if (shutter) shutter.style.display = 'none';
-  if (btn) btn.textContent = '📷 ' + t('Open Camera');
+  camClose();
   _interimCamOpen = false;
 }
-
-function takeInterimPhoto() {
-  const video = qs('#interim-camera-video');
-  const canvas = qs('#interim-snap-canvas');
-  if (!video || !canvas) return;
-  let w = video.videoWidth || 640, h = video.videoHeight || 480;
-  if (w > PHOTO_MAX_DIM || h > PHOTO_MAX_DIM) {
-    if (w > h) { h = Math.round(h * PHOTO_MAX_DIM / w); w = PHOTO_MAX_DIM; }
-    else        { w = Math.round(w * PHOTO_MAX_DIM / h); h = PHOTO_MAX_DIM; }
-  }
-  canvas.width = w; canvas.height = h;
-  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
-  const url = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
-  // Stop camera immediately after taking the photo
-  stopInterimCamera();
-  compressImage(url).then(compressed => {
-    updateInterim(r => {
-      if (!r.photos) r.photos = [];
-      r.photos.push({ url: compressed });
-    });
-    _refreshInterimPhotoGrid();
-    toast(t('📸 Photo saved'));
-  });
-}
+function takeInterimPhoto() { camSnap(); } // not called directly but kept for compat
 
 function updateInterimPhotoLabel(idx, val) {
   updateInterim(r => { if (r.photos && r.photos[idx]) r.photos[idx].label = val; });
@@ -3221,24 +3574,19 @@ function renderStep4(r) {
   render(`
     ${stepsHTML(4)}
     <div class="card-title" style="margin-bottom:10px">${t('Photo Documentation')}</div>
-    <div class="camera-preview">
-      <video id="camera-video" autoplay playsinline muted></video>
-      <div class="camera-overlay"></div>
-    </div>
-    <div style="margin-bottom:10px">
-      <div class="card-title" style="margin-bottom:6px">${t('Label for next photo:')}</div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:8px">${t('Label for next photo:')}</div>
       <div class="photo-label-select" id="label-btns">
         ${PHOTO_LABELS.map(l => `<button class="photo-label-btn ${l===state.photoLabel?'active':''}" data-label="${l}" onclick="setPhotoLabel('${l}')">${t(l)}</button>`).join('')}
       </div>
     </div>
-    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
-      <button class="shutter-btn" onclick="takePhoto()" id="shutter" title="Take photo"></button>
-      <div style="flex:1">
-        <div style="font-size:12px;color:var(--muted)">${t('Or upload from gallery:')}</div>
-        <input type="file" accept="image/*" multiple onchange="uploadPhoto(this)" style="font-size:12px;color:var(--muted);margin-top:4px">
-      </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn btn-primary" style="flex:1;padding:14px;font-size:15px" onclick="camOpen(url=>{addPhotoToReport(url,state.photoLabel);renderStep4(state.currentReport);toast(t('📸 Photo saved:')+' '+state.photoLabel);},state.photoLabel)">📷 ${t('Open Camera')}</button>
+      <label class="btn btn-ghost" style="flex:1;padding:14px;cursor:pointer;text-align:center;font-size:15px">
+        📁 ${t('Upload Photos')}
+        <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhoto(this)">
+      </label>
     </div>
-    <canvas id="snap-canvas" style="display:none"></canvas>
     <div class="card-title" style="margin-bottom:4px">${t('Photos')} (${(r.photos||[]).length})</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${t('Tap a photo label to rename it.')}</div>
     <div class="photo-grid" id="photo-grid">${photosHTML || `<div style="color:var(--muted);font-size:13px;grid-column:1/-1;padding:20px;text-align:center">${t('No photos yet. Use the camera or upload images.')}</div>`}</div>
@@ -3248,26 +3596,17 @@ function renderStep4(r) {
       <button class="btn btn-primary" onclick="showWizardStep(5)">${t('Next: General Info →')}</button>
     </div>
   `);
-  startCamera();
 }
 
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-    state.cameraStream = stream;
-    const video = qs('#camera-video');
-    if (video) video.srcObject = stream;
-  } catch (_) {
-    const preview = qs('.camera-preview');
-    if (preview) preview.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:13px;text-align:center;padding:20px">${t('Camera not available.')}<br>${t('Please upload photos from your device.')}</div>`;
-  }
-}
-
+// startCamera / stopCamera kept for backwards compat
+// Camera is now handled by camOpen() / camClose()
+async function startCamera() { /* no-op — camera now uses camOpen() fullscreen modal */ }
 function stopCamera() {
+  camClose();
   if (state.cameraStream) { state.cameraStream.getTracks().forEach(t => t.stop()); state.cameraStream = null; }
-  const video = qs('#camera-video');
-  if (video) { video.pause(); video.srcObject = null; }
 }
+
+function takePhoto() { camSnap(); } // shutter still works if called
 
 function setPhotoLabel(label) {
   state.photoLabel = label;
@@ -3292,12 +3631,29 @@ function takePhoto() {
 }
 
 function uploadPhoto(input) {
-  Array.from(input.files).forEach(file => {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  // Single file → open editor for crop/rotate
+  if (files.length === 1) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      camState.onSave = url => {
+        addPhotoToReport(url, state.photoLabel);
+        renderStep4(state.currentReport);
+        toast(t('📸 Photo saved:') + ' ' + state.photoLabel);
+      };
+      editorOpen(e.target.result);
+    };
+    reader.readAsDataURL(files[0]);
+    return;
+  }
+  // Multiple → add directly
+  files.forEach(file => {
     const reader = new FileReader();
     reader.onload = async e => {
       const compressed = await compressImage(e.target.result);
       addPhotoToReport(compressed, state.photoLabel);
-      renderPhotoGrid();
+      renderStep4(state.currentReport);
     };
     reader.onerror = () => toast(t('⚠️ Could not read photo'));
     reader.readAsDataURL(file);
