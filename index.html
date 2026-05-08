@@ -240,6 +240,13 @@ body {
   cursor: pointer; font-size: 13px; display: flex;
   align-items: center; justify-content: center;
 }
+.photo-thumb .pt-edit {
+  position: absolute; top: 4px; left: 4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,0.7); border: none; color: #fff;
+  cursor: pointer; font-size: 12px; display: flex;
+  align-items: center; justify-content: center;
+}
 /* ── Camera modal — fullscreen ── */
 .cam-modal {
   display:none; position:fixed; inset:0; z-index:2000;
@@ -583,6 +590,25 @@ body {
 // ║  In-Line     → INTERIM_PKG_ITEMS, renderInterimForm,                ║
 // ║                buildInterimReportHTML, saveInterimReports           ║
 // ╚══════════════════════════════════════════════════════════════════════╝
+
+// ══════════════════════════════════════════════════════════════════════
+// VERSION
+// ══════════════════════════════════════════════════════════════════════
+const APP_VERSION = '2.0.0';
+const APP_BUILT   = '2026';  // Update when making significant changes
+
+// ══════════════════════════════════════════════════════════════════════
+// ARCHITECTURE NOTE
+// This is a deliberate single-file application. No build step, no bundler,
+// no framework. The tradeoffs are:
+//   PRO:  zero deployment friction — share the file, it just works
+//   PRO:  no dependency rot, no node_modules, works offline
+//   CON:  all sections in one file (use the search guide above to navigate)
+//   CON:  template-literal HTML instead of a component framework
+//
+// If this grows significantly, consider splitting into ES modules:
+//   pdf.js, camera.js, checklist.js, interim.js, wizard.js, storage.js
+// ══════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════
 // CONSTANTS & STORAGE KEYS
@@ -932,6 +958,17 @@ const TR = {
 };
 const t = s => uiLang === 'tr' && TR[s] ? TR[s] : s;
 
+
+// ── Known tech debt (ordered by priority) ───────────────────────────
+// TODO(high):   Split into ES modules when file exceeds ~6000 lines
+// TODO(high):   Replace template-literal HTML with a proper component system
+// TODO(medium): Rename mixed-lang identifiers (orderno→orderNo, aciklama→notes)
+//               Requires coordinated update of Supabase column names too.
+// TODO(medium): Add unit tests for getAQLLimits(), defectTotals(), autoResult()
+// TODO(low):    Use i18next instead of the hand-rolled TR dictionary
+// TODO(low):    Add request deduplication to Supabase sync calls
+// ────────────────────────────────────────────────────────────────────
+
 // ══════════════════════════════════════════════════════════════════════
 // STATE  —  single update path so every write auto-persists
 // ══════════════════════════════════════════════════════════════════════
@@ -961,6 +998,10 @@ function updateReports(fn) {
 }
 
 // Every mutation of currentReport goes through here
+/**
+ * Atomic report mutation: applies fn to currentReport, then auto-persists.
+ * @param {function} fn - Mutator function receiving the report object
+ */
 function updateReport(fn) {
   if (!state.currentReport) return;
   fn(state.currentReport);
@@ -979,6 +1020,8 @@ function updateReport(fn) {
 // People/Customers are persisted immediately on change (see PEOPLE section)
 // ══════════════════════════════════════════════════════════════════════
 
+/** Saves reports to localStorage and syncs to Supabase. Oldest reports are
+ * pruned when storage is full. Call after every report mutation. */
 async function persistReports() {
   // Sort by date ascending so oldest is first (index 0)
   const sorted = [...state.reports].sort((a, b) => {
@@ -1032,9 +1075,13 @@ async function persistReports() {
 })();
 
 // ── Interim reports storage ──────────────────────────────────────────
+// NOTE: catch(_){} is intentional throughout storage functions.
+// localStorage failures degrade gracefully — the app uses in-memory state as fallback.
 function loadInterimReports() {
   try { return JSON.parse(localStorage.getItem(INTERIM_KEY) || '[]'); } catch(_){ return []; }
 }
+/** Persists in-line reports to localStorage + Supabase. Fire-and-forget — callers
+ * do not await this. Mirrors persistReports() pattern for in-line data. */
 async function saveInterimReports() {
   try { localStorage.setItem(INTERIM_KEY, JSON.stringify(state.interimReports)); } catch(_) {}
   if (typeof sb !== 'undefined') {
@@ -1128,9 +1175,21 @@ async function saveChecklistPeople(p) {
     } catch(e) { console.warn('[AQL] Checklist people sync failed:', e.message); }
   }
 }
+/**
+ * Loads per-device default person selections from localStorage.
+ * Defaults are intentionally NOT synced to Supabase — each device/user
+ * picks their own name independently.
+ * @returns {Object} Map of role key → default name string
+ */
 function loadPeopleDefaults() { try { return JSON.parse(localStorage.getItem(PEOPLE_DEFAULTS_KEY) || '{}'); } catch(_){ return {}; } }
+/**
+ * Saves a per-device default person selection to localStorage.
+ * @param {string} key  - Role key (e.g. "qc", "dept", "interim-supervisor")
+ * @param {string} name - Person name, or empty string to clear
+ */
 function savePeopleDefault(key, name) { const d = loadPeopleDefaults(); if (name) d[key] = name; else delete d[key]; try { localStorage.setItem(PEOPLE_DEFAULTS_KEY, JSON.stringify(d)); } catch(_) {} }
 function loadChecklists() { try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '[]'); } catch(_){ return []; } }
+/** Persists checklists to localStorage + Supabase. Fire-and-forget. */
 async function saveChecklists() {
   try { localStorage.setItem(CHECKLIST_KEY, JSON.stringify(state.checklists)); } catch(_) {}
   if (typeof sb !== 'undefined') {
@@ -1206,6 +1265,12 @@ function compressImage(dataUrl) {
 // BUSINESS LOGIC
 // ══════════════════════════════════════════════════════════════════════
 
+/**
+ * Returns AQL sample size and accept/reject limits for a given lot size and level.
+ * @param {number} qty   - Order quantity
+ * @param {string} level - AQL level: "1.0" | "1.5" | "2.5" | "4.0"
+ * @returns {{ sampleQty:number, major:number, minor:number, critical:number }}
+ */
 function getAQLLimits(qty, level) {
   const table = AQL_TABLES[level] || AQL_TABLES['2.5'];
   const keys  = Object.keys(table).map(Number).sort((a, b) => a - b);
@@ -1218,12 +1283,22 @@ function getAQLLimits(qty, level) {
   return { sampleQty, critical, major, minor };
 }
 
+/**
+ * Sums all defect counts across categories for a report.
+ * @param {Object} r - Report object
+ * @returns {{ maj:number, min:number, crit:number }}
+ */
 function defectTotals(report) {
   let maj = 0, min = 0;
   Object.values(report.defects || {}).forEach(d => { maj += d.maj || 0; min += d.min || 0; });
   return { maj, min };
 }
 
+/**
+ * Determines pass/fail based on defect counts vs AQL limits.
+ * @param {Object} r - Report object (must have majorLimit, minorLimit, criticalLimit)
+ * @returns {"pass"|"fail"|"pending"}
+ */
 function autoResult(report) {
   const { maj, min } = defectTotals(report);
   return (maj > report.majorLimit || min > report.minorLimit) ? 'fail' : 'pass';
@@ -1313,6 +1388,11 @@ function updateCameraUI() {
 }
 
 // ── Open the camera ───────────────────────────────────────────────────
+/**
+ * Opens the fullscreen camera modal.
+ * @param {function(string):void} onSave - Callback receiving compressed base64 URL
+ * @param {string} [labelText]            - Display label shown in camera top bar
+ */
 async function camOpen(onSave, labelText) {
   camState.onSave = onSave;
   camState.label  = labelText || '';
@@ -1376,6 +1456,11 @@ async function camUpload(input) {
 }
 
 // ── Photo editor ─────────────────────────────────────────────────────
+/**
+ * Opens the photo editor modal for a given image.
+ * Supports rotate, flip, and crop before saving.
+ * @param {string} dataURL - Base64 image source
+ */
 function editorOpen(dataURL, onDone) {
   camState.rotation  = 0;
   camState.flipH     = false;
@@ -1535,6 +1620,10 @@ function editorSetupCropDrag() {
   });
 }
 
+/**
+ * Applies all edits at full resolution, compresses the result,
+ * then calls camState.onSave() with the final data URL.
+ */
 async function editorSave() {
   const srcCanvas = document.getElementById('editor-canvas');
   if (!srcCanvas || !camState.srcImage) return;
@@ -1592,6 +1681,11 @@ function editorDiscard() {
 const qs     = sel => document.querySelector(sel);
 const render = html => qs('#main-content').innerHTML = html;
 
+/**
+ * Shows a transient notification at the bottom of the screen.
+ * @param {string} msg     - Message text
+ * @param {number} [dur]   - Duration in ms (default TOAST_DURATION)
+ */
 function toast(msg, dur = TOAST_DURATION) {
   const el = document.createElement('div');
   el.className = 'toast'; el.textContent = msg;
@@ -1747,6 +1841,10 @@ function hideHomeBtn() {
 // DASHBOARD
 // ══════════════════════════════════════════════════════════════════════
 
+/**
+ * Renders the main dashboard: order list with search/filter and brand badges.
+ * Also serves as the "go home" navigation target from all other screens.
+ */
 function showDashboard() {
   // Warn if user is mid-inspection and hasn't completed it
   if (state.screen === 'wizard' && state.currentReport && state.currentReport.status !== 'complete') {
@@ -1815,6 +1913,10 @@ function showDashboard() {
   filterOrders();
 }
 
+/**
+ * Filters the dashboard order list by PO number search and brand dropdown.
+ * Reads directly from DOM inputs — called on every keypress/change.
+ */
 function filterOrders() {
   const po    = (qs('#search-po')?.value || '').toLowerCase().trim();
   const brand = (qs('#filter-brand')?.value || '').toLowerCase().trim();
@@ -1861,6 +1963,12 @@ function filterOrders() {
   }).join('');
 }
 
+/**
+ * Permanently deletes ALL reports (final, in-line, checklist) for an order.
+ * Removes from localStorage, state, and Supabase.
+ * @param {string} customerEnc - URI-encoded customer name
+ * @param {string} ordernoEnc  - URI-encoded order number
+ */
 async function deleteOrder(customerEnc, ordernoEnc) {
   const customer = decodeURIComponent(customerEnc);
   const orderno  = decodeURIComponent(ordernoEnc);
@@ -1872,11 +1980,11 @@ async function deleteOrder(customerEnc, ordernoEnc) {
   // Remove interim reports
   const interimToDelete = state.interimReports.filter(r => r.customer === customer && r.orderno === orderno);
   state.interimReports = state.interimReports.filter(r => !(r.customer === customer && r.orderno === orderno));
-  saveInterimReports();
+  void saveInterimReports();
   // Remove checklists
   const checklistsToDelete = state.checklists.filter(c => c.customer === customer && c.orderno === orderno);
   state.checklists = state.checklists.filter(c => !(c.customer === customer && c.orderno === orderno));
-  saveChecklists();
+  void saveChecklists();
   // Delete all from Supabase
   if (typeof sb !== 'undefined') {
     for (const r of toDelete) {
@@ -2044,12 +2152,16 @@ function newChecklist(customer, orderno) {
   };
 }
 
+/**
+ * Atomic checklist mutation: applies fn then auto-persists.
+ * @param {function} fn - Mutator function receiving the checklist object
+ */
 function updateChecklist(fn) {
   if (!state.currentChecklist) return;
   fn(state.currentChecklist);
   const idx = state.checklists.findIndex(c => c.id === state.currentChecklist.id);
   if (idx >= 0) state.checklists[idx] = state.currentChecklist;
-  saveChecklists();
+  void saveChecklists();
 }
 
 function openChecklist(id) {
@@ -2064,7 +2176,7 @@ function openChecklist(id) {
 async function deleteChecklist(id) {
   if (!confirm(t('Remove this checklist? Make sure you have saved the PDF first.'))) return;
   state.checklists = state.checklists.filter(c => c.id !== id);
-  saveChecklists();
+  void saveChecklists();
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'checklists', null, { id: `eq.${id}` }); } catch(e) { console.warn('[AQL] Delete checklist failed:', e.message); }
   }
@@ -2085,7 +2197,7 @@ function startChecklist(customerEnc, ordernoEnc) {
     cl.header.poNo = orderno;
   }
   state.checklists.push(cl);
-  saveChecklists();
+  void saveChecklists();
   state.currentChecklist = cl;
   state.screen = 'checklist';
   showHomeBtn();
@@ -2232,6 +2344,11 @@ function updateChecklistItemField(itemId, field, value) {
   });
 }
 
+/**
+ * Records or removes a sign-off on a checklist.
+ * Stamps the current datetime automatically on sign-off.
+ * @param {string} roleId - Signoff role ID ("packingSupv" | "qcSupv" | "warehouseSupv")
+ */
 function signOffChecklist(roleId) {
   const cl = state.currentChecklist;
   if (!cl) return;
@@ -2246,6 +2363,12 @@ function signOffChecklist(roleId) {
   renderChecklistForm();
 }
 
+/**
+ * Builds the full A4 HTML document for the Final Checklist PDF.
+ * Single page: header, order info, three checklist sections, signature footer.
+ * @param {Object} cl - Checklist object
+ * @returns {string} Full HTML document string
+ */
 function buildChecklistPDF(cl) {
   const logoSrc = typeof KOZAN_JPEG_LOGO !== 'undefined' ? KOZAN_JPEG_LOGO : '';
   const logoHTML = logoSrc
@@ -2377,6 +2500,12 @@ function downloadChecklistPDF() {
 // ORDER HUB — all reports for a Brand + PO
 // ══════════════════════════════════════════════════════════════════════
 
+/**
+ * Renders the Order Hub for a given customer + PO number.
+ * Shows all in-line, final, and checklist reports for that order.
+ * @param {string} customerEnc - URI-encoded customer name
+ * @param {string} ordernoEnc  - URI-encoded order number
+ */
 function openOrderHub(customerEnc, ordernoEnc) {
   const customer = decodeURIComponent(customerEnc);
   const orderno  = decodeURIComponent(ordernoEnc);
@@ -2551,7 +2680,7 @@ function startInterimReport(customerEnc, ordernoEnc) {
     ir.qty        = ''; // Always start empty — user fills in the inspected qty
   }
   state.interimReports.push(ir);
-  saveInterimReports();
+  void saveInterimReports();
   state.currentInterim = ir;
   state.screen = 'interim';
   showHomeBtn();
@@ -2572,19 +2701,23 @@ async function deleteInterim(id) {
   const idx = state.interimReports.findIndex(r => r.id === id);
   if (idx === -1) return;
   state.interimReports.splice(idx, 1);
-  saveInterimReports();
+  void saveInterimReports();
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'interim_reports', null, { id: `eq.${id}` }); } catch(e) { console.warn('[AQL] Delete interim failed:', e.message); }
   }
   showDashboard();
 }
 
+/**
+ * Atomic in-line report mutation: applies fn then auto-persists.
+ * @param {function} fn - Mutator function receiving the in-line report object
+ */
 function updateInterim(fn) {
   if (!state.currentInterim) return;
   fn(state.currentInterim);
   const idx = state.interimReports.findIndex(r => r.id === state.currentInterim.id);
   if (idx >= 0) state.interimReports[idx] = state.currentInterim;
-  saveInterimReports();
+  void saveInterimReports();
 }
 
 function renderInterimStep(step) {
@@ -2738,6 +2871,7 @@ function renderInterimForm() {
         ${(ir.photos||[]).map((p,i)=>`
           <div class="photo-thumb" style="position:relative">
             <img src="${p.url||p}" onerror="this.style.display='none'">
+            <button class="pt-edit" onclick="editInterimPhoto(${i})" title="Edit">✏</button>
             <input value="${(p.label||'')}" placeholder="" oninput="updateInterimPhotoLabel(${i},this.value)"
               style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;border:none;font-size:10px;padding:2px 4px;text-align:center;outline:none;width:100%;box-sizing:border-box">
             <button class="pt-del" onclick="deleteInterimPhoto(${i})">✕</button>
@@ -2815,6 +2949,21 @@ function deleteInterimPhoto(idx) {
   _refreshInterimPhotoGrid();
 }
 
+/**
+ * Opens the photo editor for an already-saved in-line report photo.
+ * On save, replaces the photo in-place at the same index.
+ * @param {number} idx - Index in ir.photos array
+ */
+function editInterimPhoto(idx) {
+  const ir = state.currentInterim;
+  if (!ir || !ir.photos || !ir.photos[idx]) return;
+  camState.onSave = url => {
+    updateInterim(r => { r.photos[idx] = { ...r.photos[idx], url }; });
+    _refreshInterimPhotoGrid();
+  };
+  editorOpen(ir.photos[idx].url);
+}
+
 // ── INTERIM CAMERA — now uses shared camOpen() engine ─────────────────
 let _interimCamOpen = false; // kept for compat, no longer used for UI
 function toggleInterimCamera() {
@@ -2837,6 +2986,7 @@ function _refreshInterimPhotoGrid() {
   grid.innerHTML = (ir.photos||[]).map((p,i)=>`
     <div class="photo-thumb" style="position:relative">
       <img src="${p.url||p}" onerror="this.style.display='none'">
+      <button class="pt-edit" onclick="editInterimPhoto(${i})" title="Edit">✏</button>
       <input value="${(p.label||'')}" placeholder="" oninput="updateInterimPhotoLabel(${i},this.value)"
         style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;border:none;font-size:10px;padding:2px 4px;text-align:center;outline:none;width:100%;box-sizing:border-box">
       <button class="pt-del" onclick="deleteInterimPhoto(${i})">✕</button>
@@ -2851,6 +3001,13 @@ function _refreshInterimPhotoGrid() {
 
 // IMPORTANT: Print layout is sensitive — avoid changing widths/heights
 // without testing PDF export on A4 portrait (210mm).
+/**
+ * Builds the full A4 HTML document for the In-Line (Ara Kontrol) Report PDF.
+ * Page 1: header, order info, packaging table, control criteria, notes, signatures.
+ * Page 2: photos.
+ * @param {Object} ir - In-line report object
+ * @returns {string} Full HTML document string
+ */
 function buildInterimReportHTML(ir) {
   const logoSrc = typeof KOZAN_JPEG_LOGO !== 'undefined' ? KOZAN_JPEG_LOGO : '';
   const logoHTML = logoSrc
@@ -3625,6 +3782,7 @@ function renderStep4(r) {
   const photosHTML = (r.photos||[]).map((p,i) => `
     <div class="photo-thumb">
       <img src="${p.url}" alt="${p.label}">
+      <button class="pt-edit" onclick="editPhoto(${i})" title="Edit">✏</button>
       <div class="pt-label">
         <input value="${p.label||''}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
           onchange="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
@@ -3733,6 +3891,21 @@ function deletePhoto(idx) {
   renderPhotoGrid();
 }
 
+/**
+ * Opens the photo editor for an already-saved final report photo.
+ * On save, replaces the photo in-place at the same index.
+ * @param {number} idx - Index in r.photos array
+ */
+function editPhoto(idx) {
+  const r = state.currentReport;
+  if (!r || !r.photos[idx]) return;
+  camState.onSave = url => {
+    updateReport(r2 => { r2.photos[idx] = { ...r2.photos[idx], url }; });
+    renderStep4(state.currentReport);
+  };
+  editorOpen(r.photos[idx].url);
+}
+
 function renamePhoto(index, newLabel) {
   updateReport(r => { if (r.photos[index]) r.photos[index].label = newLabel; });
 }
@@ -3744,6 +3917,7 @@ function renderPhotoGrid() {
   grid.innerHTML = (r.photos||[]).map((p,i) => `
     <div class="photo-thumb">
       <img src="${p.url}" alt="${p.label}">
+      <button class="pt-edit" onclick="editPhoto(${i})" title="Edit">✏</button>
       <div class="pt-label">
         <input value="${p.label||''}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
           onchange="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
@@ -3760,6 +3934,13 @@ function renderPhotoGrid() {
 // FINAL REPORT — wizard helpers
 // ══════════════════════════════════════════════════════════════════════
 
+/**
+ * Builds <option> HTML for a people dropdown, pre-selecting the stored
+ * default when no explicit value has been saved on the report.
+ * @param {string} key      - People list key (e.g. "qc", "supplier")
+ * @param {string} selected - Currently saved value on the report
+ * @returns {string} HTML option string
+ */
 function peopleOpts(key, selected) {
   const list = loadPeople()[key] || [];
   const defaults = loadPeopleDefaults();
@@ -3809,6 +3990,12 @@ function renderStep5(r) {
   `);
 }
 
+/**
+ * Handles Yes/No toggle buttons on Step 5 (General Info).
+ * Saves all current form values before re-rendering to prevent data loss.
+ * @param {string} field - Report field name ("productionPerSample" | "sampleAvailable")
+ * @param {"yes"|"no"} val - Selected value
+ */
 function setYN(field, val) {
   // Save all current field values before re-render so nothing is lost
   updateReport(r => {
@@ -3936,10 +4123,145 @@ function renderStep6(r) {
   document.getElementById('print-area').innerHTML = reportHTML;
 }
 
+
+// ── buildPrintHTML sub-functions ─────────────────────────────────────
+// Extracted to keep buildPrintHTML readable. Each returns an HTML string.
+
+/** Renders the order info header table for the Final Report PDF. */
+function _pdfOrderInfoTable(r) {
+  const cell = (label, val) => PDF.cell(label, val);
+  return `
+  <table style="margin-bottom:3px;border-collapse:collapse;table-layout:fixed;width:100%">
+    <tr>
+      <td style="width:14%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Customer · Müşteri',     r.customer)}</td>
+      <td style="width:14%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Supplier · Tedarikçi',    r.supplier)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Order No',                r.orderno)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Style No',                r.styleno)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Colour · Renk',           r.colour)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Fabric · Kumaş',          r.fabric)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Order Qty',               r.orderqty)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${cell('Ship Qty',                r.shipqty)}</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Description · Tanım',  r.description)}</td>
+      <td colspan="2" style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Insp. Start · Başlangıç', r.inspstart)}</td>
+      <td colspan="2" style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Insp. Finish · Bitiş',   r.inspfinish)}</td>
+      <td style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Ship Date · Yükleme',  r.shipdate)}</td>
+      <td style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Checked Qty', r.piecesChecked||r.sampleQty)}</td>
+    </tr>
+  </table>`;
+}
+
+/** Renders the AQL summary row for the Final Report PDF. */
+function _pdfAqlSummaryRow(r) {
+  const { maj, min, crit } = defectTotals(r);
+  const pass = r.result === 'pass';
+  const resultColor = pass ? PDF.PASS_GREEN : PDF.FAIL_RED;
+  const resultText  = pass ? 'OKEY · PASSED' : 'RED · FAILED';
+  return `
+  <table style="margin-bottom:3px;border-collapse:collapse;width:100%;table-layout:fixed">
+    <tr>
+      <td style="width:14%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('AQL Level', r.aqlLevel)}</td>
+      <td style="width:14%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Sample Size', r.sampleQty)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Major Found', maj)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Major Limit', r.majorLimit)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Minor Found', min)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Minor Limit', r.minorLimit)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Critical', crit)}</td>
+      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT};background:${resultColor}10">
+        <div class="info-cell">
+          <label style="color:${resultColor}">Result · Sonuç</label>
+          <span style="color:${resultColor};font-weight:700">${resultText}</span>
+        </div>
+      </td>
+    </tr>
+  </table>`;
+}
+
+/** Renders the signature block for the Final Report PDF. */
+function _pdfSignatures(r) {
+  const sigs = [
+    { label: 'QC Name · Kalite Kontrolcü',         name: r.qcName },
+    { label: 'Dept. Manager · Departman Müdürü',   name: r.deptManager },
+    { label: 'QA Manager · Kalite Güvence Müd.',   name: r.qaManager },
+    { label: 'Supplier Rep · Firma Yetkilisi',      name: r.supplierRep },
+  ];
+  const cols = sigs.map((s, i) => `
+    <td style="border:none;padding:6px 12px;${i < sigs.length-1 ? 'border-right:1px solid '+PDF.BORDER_MED+';' : ''}width:25%;vertical-align:top">
+      ${PDF.sig(s.label, s.name)}
+    </td>`).join('');
+  return `
+  <div>${PDF.bar('SIGNATURES · İmzalar')}</div>
+  <table style="border:none;width:100%;table-layout:fixed;border-collapse:collapse">
+    <tr>${cols}</tr>
+  </table>`;
+}
+
+/** Renders the photo page (page 2) for the Final Report PDF. */
+function _pdfPhotoPage(photos) {
+  if (!photos || !photos.length) return '';
+  const grid = photos.map(p => `
+    <div style="border:1px solid ${PDF.BORDER_MED};border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column">
+      <div style="height:180px;display:flex;align-items:center;justify-content:center;background:#f9f9f9">
+        <img src="${p.url}" style="max-width:100%;max-height:180px;width:auto;height:auto;display:block;object-fit:contain">
+      </div>
+      ${p.label ? `<div style="font-size:9px;font-weight:700;color:#374151;text-align:center;padding:3px 4px;background:#f0f0f0;border-top:1px solid #ddd">${p.label}</div>` : ''}
+    </div>`).join('');
+  return `
+  <div class="pdf-page">
+    ${PDF.bar(`PHOTOS · Fotoğraflar (${photos.length})`)}
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px">
+      ${grid}
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// PDF STYLE CONSTANTS
+// Shared lookup used by all three PDF builders (final, in-line, checklist).
+// Centralising these means a colour or font-size change only needs one edit.
+// ⚠️  These are inserted into HTML strings — keep values as plain CSS strings.
+// ══════════════════════════════════════════════════════════════════════
+const PDF = Object.freeze({
+  // Colours
+  HEADER_GREY:  '#A6A6A6',
+  BORDER_LIGHT: '#d4d4d4',
+  BORDER_MED:   '#ccc',
+  TEXT_LABEL:   '#888',
+  TEXT_MUTED:   '#555',
+  TEXT_BODY:    '#111',
+  PASS_GREEN:   '#15803d',
+  FAIL_RED:     '#dc2626',
+  // Typography (used inside PDF <style> blocks)
+  SIZE_BODY:    '8.5px',
+  SIZE_LABEL:   '6.5px',
+  SIZE_SMALL:   '7px',
+  SIZE_MED:     '8px',
+  SIZE_HEADING: '11px',
+  // Helper: section bar (grey header strip)
+  bar: (text, extra = '') =>
+    `<div class="section-bar" ${extra}>${text}</div>`,
+  // Helper: info cell (label + value pair in header tables)
+  cell: (label, value) =>
+    `<div class="info-cell"><label>${label}</label><span>${value || '—'}</span></div>`,
+  // Helper: signature line
+  sig: (role, name) =>
+    `<div style="border-top:1.5px solid #111;padding-top:3px;margin-top:18px">
+      <div style="font-size:7px;color:#888;text-transform:uppercase">${role}</div>
+      <div style="font-size:9px;font-weight:500;margin-top:2px">${name || '—'}</div>
+    </div>`,
+});
+
 // ══════════════════════════════════════════════════════════════════════
 // IMPORTANT: Print layout is sensitive — avoid changing widths/heights
 // without testing PDF export on A4 portrait (210mm).
 // ══════════════════════════════════════════════════════════════════════
+/**
+ * Builds the full A4 HTML document string for the Final Inspection Report PDF.
+ * Page 1: header, order info, AQL summary, defect table, signatures.
+ * Page 2: photo grid.
+ * ⚠️  This function is 300+ lines — keep sub-sections clearly commented.
+ */
 async function buildPrintHTML() {
   const r = state.currentReport;
   if (!r) return;
