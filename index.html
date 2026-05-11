@@ -2516,7 +2516,7 @@ function downloadChecklistPDF() {
   if (!cl) return;
   const html = buildChecklistPDF(cl);
   const safeOrder = (cl.orderno||cl.header.poNo||'siparis').replace(/[^a-zA-Z0-9\-_]/g,'_');
-  _triggerPDFDownload(html, `${safeOrder}_KontrolListesi.pdf`, 5);
+  _triggerPDFDownload(html, (cl.orderno||cl.header.poNo||'ORDER').replace(/[^a-zA-Z0-9\-_]/g,'_') + '_KONTROLLISTE.pdf', 5);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -3298,7 +3298,7 @@ function downloadInterimPDF() {
   const brand = (ir.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
   const po    = (ir.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
   const safeOrder = (ir.orderno||'siparis').replace(/[^a-zA-Z0-9\-_]/g,'_');
-  const filename = `${safeOrder}_AraKontrol_${ir.interimNo}.pdf`;
+  const filename = (ir.orderno||'ORDER').replace(/[^a-zA-Z0-9\-_]/g,'_') + '_ARAKONTROL' + (ir.interimNo||1) + '.pdf';
   _triggerPDFDownload(reportHTML, filename, 8);
 }
 
@@ -4727,7 +4727,7 @@ async function downloadFinalPDF() {
   const brand = (r.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
   const po    = (r.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
   const safeOrder = (r.orderno||'siparis').replace(/[^a-zA-Z0-9\-_]/g,'_');
-  const filename = `${safeOrder}_FinalRaporu_${r.finalInspectionNo||1}.pdf`;
+  const filename = (r.orderno||'ORDER').replace(/[^a-zA-Z0-9\-_]/g,'_') + '_FINAL' + (r.finalInspectionNo||1) + '.pdf';
   _triggerPDFDownload(printHTML, filename, 5);
 }
 
