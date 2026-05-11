@@ -766,10 +766,6 @@ const RIGHT_CATS    = ['packaging','finishing'];
 // TRANSLATIONS
 // ══════════════════════════════════════════════════════════════════════
 
-// ══════════════════════════════════════════════════════════════════════
-// TRANSLATIONS
-// ══════════════════════════════════════════════════════════════════════
-
 let uiLang = 'tr';
 const TR = {
   // ── Step labels ──────────────────────────────────────────────────────
@@ -938,6 +934,7 @@ const TR = {
   'Please enter a name':'Lütfen bir isim girin','Name already exists':'Bu isim zaten var',
   'Please enter a customer name':'Lütfen müşteri adı girin','Customer already exists':'Bu müşteri zaten var',
   'Please fill in Customer and Order No':'Lütfen Müşteri ve Sipariş No alanlarını doldurun',
+  'Order creation cancelled.':'Sipariş oluşturma iptal edildi.',
   'Back':'Geri',
   'Remove this person?':'Bu kişiyi kaldırmak istiyor musunuz?',
   'Remove this customer?':'Bu müşteriyi kaldırmak istiyor musunuz?',
@@ -998,10 +995,6 @@ const t = s => uiLang === 'tr' && TR[s] ? TR[s] : s;
 
 // ══════════════════════════════════════════════════════════════════════
 // STATE  —  single update path so every write auto-persists
-// ══════════════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════════
-// STATE
 // ══════════════════════════════════════════════════════════════════════
 
 const state = {
@@ -1316,9 +1309,9 @@ function getAQLLimits(qty, level) {
  * @returns {{ maj:number, min:number, crit:number }}
  */
 function defectTotals(report) {
-  let maj = 0, min = 0;
-  Object.values(report.defects || {}).forEach(d => { maj += d.maj || 0; min += d.min || 0; });
-  return { maj, min };
+  let maj = 0, min = 0, crit = 0;
+  Object.values(report.defects || {}).forEach(d => { maj += d.maj || 0; min += d.min || 0; crit += d.crit || 0; });
+  return { maj, min, crit };
 }
 
 /**
@@ -1327,7 +1320,8 @@ function defectTotals(report) {
  * @returns {"pass"|"fail"|"pending"}
  */
 function autoResult(report) {
-  const { maj, min } = defectTotals(report);
+  const { maj, min, crit } = defectTotals(report);
+  if (crit > 0) return 'fail';
   return (maj > report.majorLimit || min > report.minorLimit) ? 'fail' : 'pass';
 }
 
@@ -1338,7 +1332,7 @@ function newReport() {
     description:'', colour:'', fabric:'', shipdate:'', inspstart:'', inspfinish:'',
     aqlLevel:'1.5', sampleQty:0, majorLimit:5, minorLimit:10, criticalLimit:0,
     defects:{}, photos:[],
-    totalBoxes:0, boxesChecked:0, boxesCheckedList:'', piecesChecked:' ',
+    totalBoxes:0, boxesChecked:0, boxesCheckedList:'', piecesChecked:0,
     inlineInspections:0, finalInspectionNo:1,
     productionPerSample:'yes', sampleAvailable:'yes', comments:'', result:'pending',
     qcName:'', deptManager:'', qaManager:'', supplierRep:'',
@@ -1476,7 +1470,7 @@ async function camUpload(input) {
   for (const file of files) {
     await new Promise(resolve => {
       const reader = new FileReader();
-      reader.onload = e => { editorOpen(e.target.result, files.length > 1 ? resolve : null); resolve(); };
+      reader.onload = e => { editorOpen(e.target.result, resolve); };
       reader.readAsDataURL(file);
     });
   }
@@ -1882,7 +1876,6 @@ function showDashboard() {
   }
   stopCamera();
   camClose();
-  _interimCamOpen = false;
   state.screen = 'dashboard';
   state.currentReport = null;
   state.currentInterim = null;
@@ -2032,10 +2025,6 @@ async function deleteOrder(customerEnc, ordernoEnc) {
 // NEW ORDER ENTRY  —  captures Brand + PO, then shows type chooser
 // ══════════════════════════════════════════════════════════════════════
 
-// ══════════════════════════════════════════════════════════════════════
-// NEW ORDER ENTRY
-// ══════════════════════════════════════════════════════════════════════
-
 function startNewOrder() {
   const allCustomers = loadCustomers();
   state.screen = 'neworder';
@@ -2083,6 +2072,7 @@ function _getNewOrderFields() {
       openOrderHub(encodeURIComponent(customer), encodeURIComponent(orderno));
       return null;
     }
+    toast(t('Order creation cancelled.'));
     return null;
   }
   return { customer, orderno };
@@ -2099,10 +2089,6 @@ function createNewFinal() {
   if (!fields) return;
   startFinalFromHub(encodeURIComponent(fields.customer), encodeURIComponent(fields.orderno));
 }
-
-// ══════════════════════════════════════════════════════════════════════
-// FINAL CHECKLIST — structure & data
-// ══════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════
 // FINAL CHECKLIST — data structure & constants
@@ -2202,12 +2188,15 @@ function openChecklist(id) {
 
 async function deleteChecklist(id) {
   if (!confirm(t('Remove this checklist? Make sure you have saved the PDF first.'))) return;
+  const cl = state.checklists.find(c => c.id === id);
+  if (!cl) return;
+  const { customer, orderno } = cl;
   state.checklists = state.checklists.filter(c => c.id !== id);
   void saveChecklists();
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'checklists', null, { id: `eq.${id}` }); } catch(e) { console.warn('[AQL] Delete checklist failed:', e.message); }
   }
-  showDashboard();
+  openOrderHub(encodeURIComponent(customer), encodeURIComponent(orderno));
 }
 
 function startChecklist(customerEnc, ordernoEnc) {
@@ -2515,13 +2504,8 @@ function downloadChecklistPDF() {
   const cl = state.currentChecklist;
   if (!cl) return;
   const html = buildChecklistPDF(cl);
-  const safeOrder = (cl.orderno||cl.header.poNo||'siparis').replace(/[^a-zA-Z0-9\-_]/g,'_');
   _triggerPDFDownload(html, (cl.orderno||cl.header.poNo||'ORDER').replace(/[^a-zA-Z0-9\-_]/g,'_') + '_KONTROLLISTE.pdf', 5);
 }
-
-// ══════════════════════════════════════════════════════════════════════
-// ORDER HUB  —  all reports for a given Brand + PO
-// ══════════════════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════════
 // ORDER HUB — all reports for a Brand + PO
@@ -2646,7 +2630,7 @@ function startFinalFromHub(customerEnc, ordernoEnc) {
   const orderno  = decodeURIComponent(ordernoEnc);
   const ref = state.reports.find(r => r.customer===customer && r.orderno===orderno)
            || state.interimReports.find(r => r.customer===customer && r.orderno===orderno);
-  stopCamera();
+  camClose();
   const r = newReport();
   r.inspstart = localNowString();
   r.customer  = customer;
@@ -2688,7 +2672,7 @@ function newInterimReport(customer, orderno) {
       skipStitchNeedle:'', oilStain:'', threadClean:'', labelPosition:'',
       symmetry:'', ironQuality:'', printEmbroidery:'', buttonHole:'', collarElasticity:'',
     },
-    generalObservation: '', supervisorName: '', qcName: '',
+    generalObservation: '', supervisorName: '', qcName: '', photos: [],
   };
 }
 
@@ -2727,12 +2711,13 @@ async function deleteInterim(id) {
   if (!confirm(t('Remove this interim report?\n\nMake sure you have saved the PDF first.'))) return;
   const idx = state.interimReports.findIndex(r => r.id === id);
   if (idx === -1) return;
+  const { customer, orderno } = state.interimReports[idx];
   state.interimReports.splice(idx, 1);
   void saveInterimReports();
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'interim_reports', null, { id: `eq.${id}` }); } catch(e) { console.warn('[AQL] Delete interim failed:', e.message); }
   }
-  showDashboard();
+  openOrderHub(encodeURIComponent(customer), encodeURIComponent(orderno));
 }
 
 /**
@@ -2990,17 +2975,6 @@ function editInterimPhoto(idx) {
   };
   editorOpen(ir.photos[idx].url);
 }
-
-// ── INTERIM CAMERA — now uses shared camOpen() engine ─────────────────
-let _interimCamOpen = false; // kept for compat, no longer used for UI
-function toggleInterimCamera() {
-  // Backwards compat — not called anymore; camera button now calls camOpen directly
-}
-function stopInterimCamera() {
-  camClose();
-  _interimCamOpen = false;
-}
-function takeInterimPhoto() { camSnap(); } // not called directly but kept for compat
 
 function updateInterimPhotoLabel(idx, val) {
   updateInterim(r => { if (r.photos && r.photos[idx]) r.photos[idx].label = val; });
@@ -3297,7 +3271,6 @@ function downloadInterimPDF() {
   const reportHTML = buildInterimReportHTML(ir);
   const brand = (ir.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
   const po    = (ir.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
-  const safeOrder = (ir.orderno||'siparis').replace(/[^a-zA-Z0-9\-_]/g,'_');
   const filename = (ir.orderno||'ORDER').replace(/[^a-zA-Z0-9\-_]/g,'_') + '_ARAKONTROL' + (ir.interimNo||1) + '.pdf';
   _triggerPDFDownload(reportHTML, filename, 8);
 }
@@ -3306,6 +3279,7 @@ async function deleteReport(id) {
   if (!confirm(t('Remove this report?\n\nMake sure you have saved the PDF first.'))) return;
   const index = state.reports.findIndex(r => r.id === id);
   if (index === -1) return;
+  const { customer, orderno } = state.reports[index];
   state.reports.splice(index, 1);
   try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.reports)); } catch (_) {}
@@ -3313,7 +3287,7 @@ async function deleteReport(id) {
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'reports', null, { id: `eq.${id}` }); } catch (e) { console.warn('[AQL] Delete failed:', e.message); }
   }
-  showDashboard();
+  openOrderHub(encodeURIComponent(customer), encodeURIComponent(orderno));
 }
 
 function openReport(id) {
@@ -3403,10 +3377,6 @@ async function actionSheetDownload() {
 
 // ══════════════════════════════════════════════════════════════════════
 // MANAGE PEOPLE
-// ══════════════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════════
-// MANAGE PEOPLE UI
 // ══════════════════════════════════════════════════════════════════════
 
 function showManagePeople() {
@@ -3552,10 +3522,6 @@ function deleteChecklistPerson(rawKey, idx) {
 
 // ══════════════════════════════════════════════════════════════════════
 // MANAGE CUSTOMERS
-// ══════════════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════════
-// MANAGE CUSTOMERS UI
 // ══════════════════════════════════════════════════════════════════════
 
 function showManageCustomers() {
@@ -3710,7 +3676,7 @@ function renderStep2(r) {
     <div class="card-title" style="margin-bottom:12px">${t('Choose AQL Level')}</div>
     <div id="aql-options">
       ${aqlOptions.map(o => `
-        <div class="aql-option ${currentLevel===o.level?'selected':''}" onclick="selectAQL('${o.level}')">
+        <div class="aql-option ${currentLevel===o.level?'selected':''}" onclick="selectAQL(event,'${o.level}')">
           <div class="ao-radio"></div>
           <div class="ao-body"><h3>${t(o.label)}</h3><p>${t(o.desc)}</p></div>
         </div>`).join('')}
@@ -3731,7 +3697,7 @@ function renderStep2(r) {
   `);
 }
 
-function selectAQL(level) {
+function selectAQL(event, level) {
   updateReport(r => { r.aqlLevel = level; });
   const limits = getAQLLimits(state.currentReport.orderqty||5000, level);
   document.querySelectorAll('.aql-option').forEach(el => el.classList.remove('selected'));
@@ -3760,8 +3726,8 @@ function saveStep2() {
 // ══════════════════════════════════════════════════════════════════════
 
 function renderStep3(r) {
-  const { maj, min } = defectTotals(r);
-  const statusCls   = maj>r.majorLimit||min>r.minorLimit ? 'fail' : (maj>0||min>0 ? 'pass' : 'pending');
+  const { maj, min, crit } = defectTotals(r);
+  const statusCls   = crit>0||maj>r.majorLimit||min>r.minorLimit ? 'fail' : (maj>0||min>0 ? 'pass' : 'pending');
   const statusLabel = statusCls==='fail' ? t('✗ FAILING') : statusCls==='pass' ? t('✓ PASSING') : t('— No Defects');
   const tabs = DEFECT_CATEGORIES.map(c =>
     `<button class="tab-btn ${c.id===state.activeDefectTab?'active':''}" onclick="switchDefectTab('${c.id}')">${t(c.label)}</button>`
@@ -3879,8 +3845,8 @@ function changeDefect(code, type, delta) {
   const d   = r.defects[code];
   const el  = qs(`#def-${type}-${code}`);
   if (el) { el.textContent = d[type]; el.className = d[type]>0?'nonzero':''; }
-  const { maj, min } = defectTotals(r);
-  const statusCls   = maj>r.majorLimit||min>r.minorLimit ? 'fail' : (maj>0||min>0 ? 'pass' : 'pending');
+  const { maj, min, crit } = defectTotals(r);
+  const statusCls   = crit>0||maj>r.majorLimit||min>r.minorLimit ? 'fail' : (maj>0||min>0 ? 'pass' : 'pending');
   const statusLabel = statusCls==='fail' ? t('✗ FAILING') : statusCls==='pass' ? t('✓ PASSING') : t('— No Defects');
   const sbEl = qs('.status-result');
   if (sbEl) { sbEl.className=`status-result ${statusCls}`; sbEl.textContent=statusLabel; }
@@ -3901,7 +3867,7 @@ function renderStep4(r) {
       <button class="pt-edit" onclick="editPhoto(${i})" title="Edit">✏</button>
       <div class="pt-label">
         <input value="${p.label||''}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
-          onchange="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
+          oninput="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
       </div>
       <button class="pt-del" onclick="deletePhoto(${i})">✕</button>
     </div>`).join('');
@@ -3945,23 +3911,6 @@ function takePhoto() { camSnap(); } // shutter still works if called
 function setPhotoLabel(label) {
   state.photoLabel = label;
   document.querySelectorAll('.photo-label-btn').forEach(b => b.classList.toggle('active', b.dataset.label===label));
-}
-
-function takePhoto() {
-  const video = qs('#camera-video'), canvas = qs('#snap-canvas');
-  if (!video || !canvas) return;
-  let w = video.videoWidth||640, h = video.videoHeight||480;
-  if (w>PHOTO_MAX_DIM||h>PHOTO_MAX_DIM) {
-    if (w>h) { h=Math.round(h*PHOTO_MAX_DIM/w); w=PHOTO_MAX_DIM; }
-    else      { w=Math.round(w*PHOTO_MAX_DIM/h); h=PHOTO_MAX_DIM; }
-  }
-  canvas.width=w; canvas.height=h;
-  canvas.getContext('2d').drawImage(video,0,0,w,h);
-  const url = canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
-  stopCamera();
-  addPhotoToReport(url, state.photoLabel);
-  toast(t('📸 Photo saved:') + ' ' + state.photoLabel);
-  setTimeout(() => startCamera(), 400);
 }
 
 function uploadPhoto(input) {
@@ -4036,7 +3985,7 @@ function renderPhotoGrid() {
       <button class="pt-edit" onclick="editPhoto(${i})" title="Edit">✏</button>
       <div class="pt-label">
         <input value="${p.label||''}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
-          onchange="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
+          oninput="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
       </div>
       <button class="pt-del" onclick="deletePhoto(${i})">✕</button>
     </div>`).join('') || `<div style="color:var(--muted);font-size:13px;grid-column:1/-1;padding:20px;text-align:center">${t('No photos yet.')}</div>`;
@@ -4044,10 +3993,6 @@ function renderPhotoGrid() {
 
 // ══════════════════════════════════════════════════════════════════════
 // STEP 5: GENERAL INFO
-// ══════════════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════════
-// FINAL REPORT — wizard helpers
 // ══════════════════════════════════════════════════════════════════════
 
 /**
@@ -4313,31 +4258,6 @@ function _pdfSignatures(r) {
   </table>`;
 }
 
-/** Renders the photo page(s) for the Final Report PDF.
- *  6 photos per page (3 cols × 2 rows), aspect ratio preserved, nothing cropped. */
-function _pdfPhotoPage(photos) {
-  if (!photos || !photos.length) return '';
-  const PER_PAGE = 8;
-  let pages = '';
-  for (let start = 0; start < photos.length; start += PER_PAGE) {
-    const chunk = photos.slice(start, start + PER_PAGE);
-    const grid = chunk.map(p => `
-      <div style="border:1px solid ${PDF.BORDER_MED};border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column">
-        <div style="width:100%;height:170px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f9f9f9">
-          <img src="${p.url}" style="max-width:100%;max-height:170px;width:auto;height:auto;display:block;object-fit:contain">
-        </div>
-        ${p.label ? `<div style="font-size:9px;font-weight:700;color:#374151;text-align:center;padding:3px 4px;background:#f0f0f0;border-top:1px solid #ddd">${p.label}</div>` : ''}
-      </div>`).join('');
-    pages += `
-  <div class="pdf-page">
-    ${PDF.bar(`PHOTOS · Fotoğraflar (${photos.length})`)}
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px">
-      ${grid}
-    </div>
-  </div>`;
-  }
-  return pages;
-}
 
 // ══════════════════════════════════════════════════════════════════════
 // PDF STYLE CONSTANTS
@@ -4689,44 +4609,16 @@ async function buildPrintHTML() {
   + '</body></html>';
   const brand = (r.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
   const po = (r.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
-  const pdfFilename = brand + '_' + po;
 
-  // Render printHTML in a hidden iframe so fonts/images fully load before capture
-  return new Promise((resolve) => {
-    const old = document.getElementById('_pdf_iframe');
-    if (old) old.remove();
-
-    const iframe = document.createElement('iframe');
-    iframe.id = '_pdf_iframe';
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;visibility:hidden;';
-    document.body.appendChild(iframe);
-
-    iframe.onload = () => {
-      setTimeout(() => {
-        const iDoc = iframe.contentDocument || iframe.contentWindow.document;
-        resolve({ iBody: iDoc.body, iframe, pdfFilename, printHTML });
-      }, 800); // wait for fonts
-    };
-
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(printHTML);
-    iframe.contentDocument.close();
-  });
+  return printHTML;
 }
 
 // ── DOWNLOAD FINAL PDF ─ html2canvas + jsPDF ────────────────────────
 async function downloadFinalPDF() {
   const r = state.currentReport;
   if (!r) return;
-  // Build the high-quality print HTML via the existing iframe builder
-  const result = await buildPrintHTML();
-  if (!result) { toast('❌ PDF oluşturulamadı'); return; }
-  const { iBody, iframe, printHTML } = result;
-  iframe.remove();
-
-  const brand = (r.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
-  const po    = (r.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
-  const safeOrder = (r.orderno||'siparis').replace(/[^a-zA-Z0-9\-_]/g,'_');
+  const printHTML = await buildPrintHTML();
+  if (!printHTML) { toast('❌ PDF oluşturulamadı'); return; }
   const filename = (r.orderno||'ORDER').replace(/[^a-zA-Z0-9\-_]/g,'_') + '_FINAL' + (r.finalInspectionNo||1) + '.pdf';
   _triggerPDFDownload(printHTML, filename, 5);
 }
