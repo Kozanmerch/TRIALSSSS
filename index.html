@@ -589,8 +589,6 @@ body {
   <button id="action-cancel-btn" onclick="closeActionSheet()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;margin-top:2px">Cancel</button>
 </div>
 
-<div id="print-area" style="display:none"></div>
-
 <script>
 // ╔══════════════════════════════════════════════════════════════════════╗
 // ║  AQL INSPECTION SYSTEM — single-file app                            ║
@@ -1703,6 +1701,20 @@ const qs     = sel => document.querySelector(sel);
 const render = html => qs('#main-content').innerHTML = html;
 
 /**
+ * Escapes a value for safe injection into HTML attribute or text context.
+ * Prevents layout breakage when customer names, style numbers, or labels
+ * contain quotes, angle brackets, or ampersands.
+ * @param {*} v - Any value (coerced to string)
+ * @returns {string} HTML-escaped string
+ */
+const esc = v => String(v == null ? '' : v)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+/**
  * Shows a transient notification at the bottom of the screen.
  * @param {string} msg     - Message text
  * @param {number} [dur]   - Duration in ms (default TOAST_DURATION)
@@ -1866,6 +1878,30 @@ function hideHomeBtn() {
  * Renders the main dashboard: order list with search/filter and brand badges.
  * Also serves as the "go home" navigation target from all other screens.
  */
+/**
+ * Derives a grouped, sorted order list from state.reports and state.interimReports.
+ * Pure function — reads state but does not mutate it.
+ * @returns {Array} Orders sorted by most recent activity descending
+ */
+function getOrders() {
+  const orderMap = {};
+  state.reports.forEach(r => {
+    const key = (r.customer||'') + '||' + (r.orderno||'');
+    if (!orderMap[key]) orderMap[key] = { customer: r.customer, orderno: r.orderno, finals: [], interims: [], lastDate: '' };
+    orderMap[key].finals.push(r);
+    const d = r.createdAt || r.savedAt || '';
+    if (d > orderMap[key].lastDate) orderMap[key].lastDate = d;
+  });
+  state.interimReports.forEach(ir => {
+    const key = (ir.customer||'') + '||' + (ir.orderno||'');
+    if (!orderMap[key]) orderMap[key] = { customer: ir.customer, orderno: ir.orderno, finals: [], interims: [], lastDate: '' };
+    orderMap[key].interims.push(ir);
+    const d = ir.createdAt || '';
+    if (d > orderMap[key].lastDate) orderMap[key].lastDate = d;
+  });
+  return Object.values(orderMap).sort((a, b) => b.lastDate < a.lastDate ? -1 : b.lastDate > a.lastDate ? 1 : 0);
+}
+
 function showDashboard() {
   // Warn if user is mid-inspection and hasn't completed it
   if (state.screen === 'wizard' && state.currentReport && state.currentReport.status !== 'complete') {
@@ -1883,26 +1919,6 @@ function showDashboard() {
   hideHomeBtn();
   const langBtn = qs('#lang-btn');
   if (langBtn) langBtn.textContent = uiLang === 'tr' ? '🇬🇧 English' : '🇹🇷 Türkçe';
-
-  // Build a grouped map: key = "customer||orderno"
-  const orderMap = {};
-  state.reports.forEach(r => {
-    const key = (r.customer||'') + '||' + (r.orderno||'');
-    if (!orderMap[key]) orderMap[key] = { customer: r.customer, orderno: r.orderno, finals: [], interims: [], lastDate: '' };
-    orderMap[key].finals.push(r);
-    const d = r.createdAt || r.savedAt || '';
-    if (d > orderMap[key].lastDate) orderMap[key].lastDate = d;
-  });
-  state.interimReports.forEach(ir => {
-    const key = (ir.customer||'') + '||' + (ir.orderno||'');
-    if (!orderMap[key]) orderMap[key] = { customer: ir.customer, orderno: ir.orderno, finals: [], interims: [], lastDate: '' };
-    orderMap[key].interims.push(ir);
-    const d = ir.createdAt || '';
-    if (d > orderMap[key].lastDate) orderMap[key].lastDate = d;
-  });
-
-  const orders = Object.values(orderMap).sort((a,b) => b.lastDate < a.lastDate ? -1 : b.lastDate > a.lastDate ? 1 : 0);
-  state._orders = orders;
 
   render(`
     <div class="dash-header" style="display:flex;align-items:flex-start;justify-content:space-between">
@@ -1923,7 +1939,7 @@ function showDashboard() {
     <div style="margin-bottom:14px">
       <select id="filter-brand" onchange="filterOrders()" class="app-select">
         <option value="">🏷 ${uiLang==='tr'?'Tüm Müşteriler':'All Brands'}</option>
-        ${[...new Set([...state.reports.map(r=>r.customer||''), ...state.interimReports.map(r=>r.customer||'')].filter(Boolean))].sort().map(c=>`<option value="${c}">${c}</option>`).join('')}
+        ${[...new Set([...state.reports.map(r=>r.customer||''), ...state.interimReports.map(r=>r.customer||'')].filter(Boolean))].sort().map(c=>`<option value="${esc(c)}">${c}</option>`).join('')}
       </select>
     </div>
     <div class="card-title" style="margin-bottom:10px">${t('Orders')}</div>
@@ -1940,14 +1956,15 @@ function showDashboard() {
 function filterOrders() {
   const po    = (qs('#search-po')?.value || '').toLowerCase().trim();
   const brand = (qs('#filter-brand')?.value || '').toLowerCase().trim();
-  const orders = (state._orders || []).filter(o => {
+  const allOrders = getOrders();
+  const orders = allOrders.filter(o => {
     if (po && !(o.orderno||'').toLowerCase().includes(po) && !(o.customer||'').toLowerCase().includes(po)) return false;
     if (brand && (o.customer||'').toLowerCase() !== brand) return false;
     return true;
   });
   const list = qs('#order-list');
   if (!list) return;
-  if (!(state._orders||[]).length) {
+  if (!allOrders.length) {
     list.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><h3>${t('No inspections yet')}</h3><p>${t('Start your first inspection report')}</p></div>`;
     return;
   }
@@ -1996,15 +2013,15 @@ async function deleteOrder(customerEnc, ordernoEnc) {
   // Remove final reports
   const toDelete = state.reports.filter(r => r.customer === customer && r.orderno === orderno);
   state.reports = state.reports.filter(r => !(r.customer === customer && r.orderno === orderno));
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.reports)); } catch(_) {}
+  persistReports().catch(e => console.warn('[AQL] persistReports failed:', e.message));
   // Remove interim reports
   const interimToDelete = state.interimReports.filter(r => r.customer === customer && r.orderno === orderno);
   state.interimReports = state.interimReports.filter(r => !(r.customer === customer && r.orderno === orderno));
-  void saveInterimReports();
+  saveInterimReports().catch(e => console.warn("[AQL] saveInterimReports failed:", e.message));
   // Remove checklists
   const checklistsToDelete = state.checklists.filter(c => c.customer === customer && c.orderno === orderno);
   state.checklists = state.checklists.filter(c => !(c.customer === customer && c.orderno === orderno));
-  void saveChecklists();
+  saveChecklists().catch(e => console.warn("[AQL] saveChecklists failed:", e.message));
   // Delete all from Supabase
   if (typeof sb !== 'undefined') {
     for (const r of toDelete) {
@@ -2174,7 +2191,7 @@ function updateChecklist(fn) {
   fn(state.currentChecklist);
   const idx = state.checklists.findIndex(c => c.id === state.currentChecklist.id);
   if (idx >= 0) state.checklists[idx] = state.currentChecklist;
-  void saveChecklists();
+  saveChecklists().catch(e => console.warn("[AQL] saveChecklists failed:", e.message));
 }
 
 function openChecklist(id) {
@@ -2192,7 +2209,7 @@ async function deleteChecklist(id) {
   if (!cl) return;
   const { customer, orderno } = cl;
   state.checklists = state.checklists.filter(c => c.id !== id);
-  void saveChecklists();
+  saveChecklists().catch(e => console.warn("[AQL] saveChecklists failed:", e.message));
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'checklists', null, { id: `eq.${id}` }); } catch(e) { console.warn('[AQL] Delete checklist failed:', e.message); }
   }
@@ -2213,7 +2230,7 @@ function startChecklist(customerEnc, ordernoEnc) {
     cl.header.poNo = orderno;
   }
   state.checklists.push(cl);
-  void saveChecklists();
+  saveChecklists().catch(e => console.warn("[AQL] saveChecklists failed:", e.message));
   state.currentChecklist = cl;
   state.screen = 'checklist';
   showHomeBtn();
@@ -2234,7 +2251,7 @@ function renderChecklistForm() {
   const checkedByNames = cp.checkedBy || [];
   const nameOptsFor = (selected) =>
     `<option value="">— ${t('Who')||'Who'} —</option>` +
-    checkedByNames.map(n => `<option value="${n}" ${n===selected?'selected':''}>${n}</option>`).join('');
+    checkedByNames.map(n => `<option value="${esc(n)}" ${n===selected?'selected':''}>${n}</option>`).join('');
 
   // CSS classes: .app-input-sm, .app-select-sm (defined in <style>)
 
@@ -2258,7 +2275,7 @@ function renderChecklistForm() {
         </td>
         <td style="padding:6px 8px;vertical-align:middle;width:120px;font-size:11px;color:var(--muted);white-space:nowrap">${entry.date||'—'}</td>
         <td style="padding:6px 8px;vertical-align:middle">
-          <input placeholder="" value="${(entry.comments||'').replace(/"/g,'&quot;')}" oninput="updateChecklist(c=>c.items['${item.id}'].comments=this.value)" class="app-input">
+          <input placeholder="" value="${esc(entry.comments||'')}" oninput="updateChecklist(c=>c.items['${item.id}'].comments=this.value)" class="app-input">
         </td>
       </tr>`;
     }).join('');
@@ -2286,7 +2303,7 @@ function renderChecklistForm() {
     const so = cl.signoffs[role.id] || { name: '', date: '', signed: false };
     const names = cp[role.id] || [];
     const effectiveName = so.name || defaults[`cl-${role.id}`] || '';
-    const opts = [`<option value="">— Select —</option>`, ...names.map(n => `<option value="${n}" ${n===effectiveName?'selected':''}>${n}</option>`)].join('');
+    const opts = [`<option value="">— Select —</option>`, ...names.map(n => `<option value="${esc(n)}" ${n===effectiveName?'selected':''}>${n}</option>`)].join('');
     return `
     <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;background:var(--surface)">
       <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">${role.label}</div>
@@ -2309,15 +2326,15 @@ function renderChecklistForm() {
     <div class="card" style="margin-bottom:14px">
       <div class="card-title" style="margin-bottom:10px">${t('Shipment Details · Yükleme Bilgileri')}</div>
       <div class="grid-2">
-        <div class="field"><label>${t('Customer · Müşteri')}</label><input value="${cl.header.customer||cl.customer||''}" oninput="updateChecklist(c=>c.header.customer=this.value)" class="app-input"></div>
-        <div class="field"><label>${t('PO Number · PO Numarası')}</label><input value="${cl.header.poNo||''}" oninput="updateChecklist(c=>c.header.poNo=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('Customer · Müşteri')}</label><input value="${esc(cl.header.customer||cl.customer||'')}" oninput="updateChecklist(c=>c.header.customer=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('PO Number · PO Numarası')}</label><input value="${esc(cl.header.poNo||'')}" oninput="updateChecklist(c=>c.header.poNo=this.value)" class="app-input"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label>${t('Style Name / Model No')}</label><input value="${cl.header.styleName||''}" oninput="updateChecklist(c=>c.header.styleName=this.value)" class="app-input"></div>
-        <div class="field"><label>${t('Colour · Renk')}</label><input value="${cl.header.colour||''}" oninput="updateChecklist(c=>c.header.colour=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('Style Name / Model No')}</label><input value="${esc(cl.header.styleName||'')}" oninput="updateChecklist(c=>c.header.styleName=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('Colour · Renk')}</label><input value="${esc(cl.header.colour||'')}" oninput="updateChecklist(c=>c.header.colour=this.value)" class="app-input"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label>${t('Shipment Date · Yükleme Tarihi')}</label><input value="${cl.header.shipmentDate||''}" oninput="updateChecklist(c=>c.header.shipmentDate=this.value)" class="app-input"></div>
+        <div class="field"><label>${t('Shipment Date · Yükleme Tarihi')}</label><input value="${esc(cl.header.shipmentDate||'')}" oninput="updateChecklist(c=>c.header.shipmentDate=this.value)" class="app-input"></div>
       </div>
     </div>
 
@@ -2331,7 +2348,7 @@ function renderChecklistForm() {
 
     <div class="spacer"></div>
     <div class="bottom-nav">
-      <button class="btn btn-ghost" onclick="showDashboard()">${t('← Back')}</button>
+      <button class="btn btn-ghost" onclick="openOrderHub(encodeURIComponent(cl.customer),encodeURIComponent(cl.orderno))">${t('← Back')}</button>
       <button class="btn btn-primary" onclick="downloadChecklistPDF()">${t('📥 Download PDF')}</button>
     </div>
   `);
@@ -2691,7 +2708,7 @@ function startInterimReport(customerEnc, ordernoEnc) {
     ir.qty        = ''; // Always start empty — user fills in the inspected qty
   }
   state.interimReports.push(ir);
-  void saveInterimReports();
+  saveInterimReports().catch(e => console.warn("[AQL] saveInterimReports failed:", e.message));
   state.currentInterim = ir;
   state.screen = 'interim';
   showHomeBtn();
@@ -2713,7 +2730,7 @@ async function deleteInterim(id) {
   if (idx === -1) return;
   const { customer, orderno } = state.interimReports[idx];
   state.interimReports.splice(idx, 1);
-  void saveInterimReports();
+  saveInterimReports().catch(e => console.warn("[AQL] saveInterimReports failed:", e.message));
   if (typeof sb !== 'undefined') {
     try { await sb.rest('DELETE', 'interim_reports', null, { id: `eq.${id}` }); } catch(e) { console.warn('[AQL] Delete interim failed:', e.message); }
   }
@@ -2729,7 +2746,7 @@ function updateInterim(fn) {
   fn(state.currentInterim);
   const idx = state.interimReports.findIndex(r => r.id === state.currentInterim.id);
   if (idx >= 0) state.interimReports[idx] = state.currentInterim;
-  void saveInterimReports();
+  saveInterimReports().catch(e => console.warn("[AQL] saveInterimReports failed:", e.message));
 }
 
 function renderInterimStep(step) {
@@ -2767,6 +2784,14 @@ const INTERIM_CTRL_ITEMS = [
 // ──────────────────────────────────────────────
 // IN-LINE — form render
 // ──────────────────────────────────────────────
+function camOpenInterim() {
+  camOpen(url => {
+    updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url, label: '' }); });
+    _refreshInterimPhotoGrid();
+    toast(t('📸 Photo saved'));
+  }, '');
+}
+
 function renderInterimForm() {
   const ir = state.currentInterim;
   if (!ir) return;
@@ -2778,8 +2803,8 @@ function renderInterimForm() {
   const interimSupList = ip.supervisor || [];
   const effectiveQc  = ir.qcName        || defaults['interim-qc']       || '';
   const effectiveSup = ir.supervisorName || defaults['interim-supervisor'] || '';
-  const qcOpts  = [`<option value="">— ${t('— Select —')||'Select'} —</option>`, ...interimQcList.map(n=>`<option value="${n}" ${n===effectiveQc?'selected':''}>${n}</option>`)].join('');
-  const supOpts = [`<option value="">— ${t('— Select —')||'Select'} —</option>`, ...interimSupList.map(n=>`<option value="${n}" ${n===effectiveSup?'selected':''}>${n}</option>`)].join('');
+  const qcOpts  = [`<option value="">— ${t('— Select —')||'Select'} —</option>`, ...interimQcList.map(n=>`<option value="${esc(n)}" ${n===effectiveQc?'selected':''}>${n}</option>`)].join('');
+  const supOpts = [`<option value="">— ${t('— Select —')||'Select'} —</option>`, ...interimSupList.map(n=>`<option value="${esc(n)}" ${n===effectiveSup?'selected':''}>${n}</option>`)].join('');
 
   // CSS classes: .app-input, .app-textarea, .app-select (defined in <style>)
 
@@ -2811,17 +2836,17 @@ function renderInterimForm() {
     <div class="card" style="margin-bottom:12px">
       <div class="card-title" style="margin-bottom:12px">${uiLang==='tr'?'Rapor Bilgileri':'Rapor Bilgileri · Report Info'}</div>
       <div class="grid-2">
-        <div class="field"><label>${uiLang==='tr'?'Müşteri':'Müşteri · Customer'}</label><input value="${ir.customer||''}" class="app-input" readonly></div>
-        <div class="field"><label>${uiLang==='tr'?'İmalatçı':'İmalatçı · Manufacturer'}</label><input value="${ir.supplier||''}" oninput="updateInterim(r=>r.supplier=this.value)" class="app-input"></div>
+        <div class="field"><label>${uiLang==='tr'?'Müşteri':'Müşteri · Customer'}</label><input value="${esc(ir.customer||'')}" class="app-input" readonly></div>
+        <div class="field"><label>${uiLang==='tr'?'İmalatçı':'İmalatçı · Manufacturer'}</label><input value="${esc(ir.supplier||'')}" oninput="updateInterim(r=>r.supplier=this.value)" class="app-input"></div>
       </div>
       <div class="grid-2">
-        <div class="field"><label>${t('Sipariş No · Order No')}</label><input value="${ir.orderno||''}" class="app-input" readonly></div>
-        <div class="field"><label>${t('Model Kodu · Style No')}</label><input value="${ir.styleno||ir.modelNo||''}" oninput="updateInterim(r=>{r.styleno=this.value;r.modelNo=this.value;})" class="app-input" placeholder=""></div>
+        <div class="field"><label>${t('Sipariş No · Order No')}</label><input value="${esc(ir.orderno||'')}" class="app-input" readonly></div>
+        <div class="field"><label>${t('Model Kodu · Style No')}</label><input value="${esc(ir.styleno||ir.modelNo||'')}" oninput="updateInterim(r=>{r.styleno=this.value;r.modelNo=this.value;})" class="app-input" placeholder=""></div>
       </div>
-      <div class="field"><label>${uiLang==='tr'?'Model / Kumaş Tanımı':'Model / Fabric Description'}</label><input value="${ir.fabricDesc||''}" oninput="updateInterim(r=>r.fabricDesc=this.value)" class="app-input" placeholder=""></div>
+      <div class="field"><label>${uiLang==='tr'?'Model / Kumaş Tanımı':'Model / Fabric Description'}</label><input value="${esc(ir.fabricDesc||'')}" oninput="updateInterim(r=>r.fabricDesc=this.value)" class="app-input" placeholder=""></div>
       <div class="grid-3">
-        <div class="field"><label>${uiLang==='tr'?'Renk':'Renk · Colour'}</label><input value="${ir.colour||''}" oninput="updateInterim(r=>r.colour=this.value)" class="app-input"></div>
-        <div class="field"><label>${uiLang==='tr'?'Beden':'Beden · Size'}</label><input value="${ir.size||''}" oninput="updateInterim(r=>r.size=this.value)" class="app-input" placeholder=""></div>
+        <div class="field"><label>${uiLang==='tr'?'Renk':'Renk · Colour'}</label><input value="${esc(ir.colour||'')}" oninput="updateInterim(r=>r.colour=this.value)" class="app-input"></div>
+        <div class="field"><label>${uiLang==='tr'?'Beden':'Beden · Size'}</label><input value="${esc(ir.size||'')}" oninput="updateInterim(r=>r.size=this.value)" class="app-input" placeholder=""></div>
         <div class="field"><label>${uiLang==='tr'?'Adet':'Adet · Qty'}</label><input value="${ir.qty||''}" oninput="updateInterim(r=>r.qty=this.value)" type="number" class="app-input"></div>
       </div>
       <div class="grid-3">
@@ -2873,7 +2898,7 @@ function renderInterimForm() {
       <div class="card-title" style="margin-bottom:8px">${t('📸 Fotoğraflar · Photos')}</div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:10px">${t('Photos will appear on page 2 of the PDF.')}</p>
       <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
-        <button class="btn btn-primary" id="interim-cam-btn" onclick="camOpen(url=>{updateInterim(r=>{if(!r.photos)r.photos=[];r.photos.push({url,label:''});});_refreshInterimPhotoGrid();toast(t('📸 Photo saved'));}, '')" style="flex:1">📷 ${t('Open Camera')}</button>
+        <button class="btn btn-primary" id="interim-cam-btn" onclick="camOpenInterim()" style="flex:1">📷 ${t('Open Camera')}</button>
         <label class="btn btn-ghost" style="flex:1;cursor:pointer;text-align:center">
           📁 ${t('Upload Photos')}
           <input type="file" accept="image/*" multiple style="display:none" onchange="addInterimPhotos(this)">
@@ -2884,7 +2909,7 @@ function renderInterimForm() {
           <div class="photo-thumb" style="position:relative">
             <img src="${p.url||p}" onerror="this.style.display='none'">
             <button class="pt-edit" onclick="editInterimPhoto(${i})" title="Edit">✏</button>
-            <input value="${(p.label||'')}" placeholder="" oninput="updateInterimPhotoLabel(${i},this.value)"
+            <input value="${esc((p.label||''))}" placeholder="" oninput="updateInterimPhotoLabel(${i},this.value)"
               style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;border:none;font-size:10px;padding:2px 4px;text-align:center;outline:none;width:100%;box-sizing:border-box">
             <button class="pt-del" onclick="deleteInterimPhoto(${i})">✕</button>
           </div>`).join('')}
@@ -2988,7 +3013,7 @@ function _refreshInterimPhotoGrid() {
     <div class="photo-thumb" style="position:relative">
       <img src="${p.url||p}" onerror="this.style.display='none'">
       <button class="pt-edit" onclick="editInterimPhoto(${i})" title="Edit">✏</button>
-      <input value="${(p.label||'')}" placeholder="" oninput="updateInterimPhotoLabel(${i},this.value)"
+      <input value="${esc((p.label||''))}" placeholder="" oninput="updateInterimPhotoLabel(${i},this.value)"
         style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#fff;border:none;font-size:10px;padding:2px 4px;text-align:center;outline:none;width:100%;box-sizing:border-box">
       <button class="pt-del" onclick="deleteInterimPhoto(${i})">✕</button>
     </div>`).join('') +
@@ -3394,7 +3419,7 @@ function showManagePeople() {
       <span style="font-size:11px;color:var(--muted)">${uiLang==='tr'?'Varsayılanım:':'My Default:'}</span>
       <select onchange="savePeopleDefault('${key}',this.value);showManagePeople()" style="background:#f5f5f5;border:1px solid var(--border2);border-radius:4px;padding:3px 8px;font-size:12px;font-family:inherit;color:#111;outline:none">
         <option value="">${uiLang==='tr'?'— Seçilmemiş —':'— None —'}</option>
-        ${list.map(n=>`<option value="${n}" ${n===cur?'selected':''}>${n}</option>`).join('')}
+        ${list.map(n=>`<option value="${esc(n)}" ${n===cur?'selected':''}>${n}</option>`).join('')}
       </select>
       ${cur ? `<span style="font-size:11px;color:var(--pass)">✓ ${cur}</span>` : ''}
     </div>`;
@@ -3592,8 +3617,8 @@ function showWizardStep(step) {
 function customerOpts(selected) {
   const list = loadCustomers();
   const opts = [`<option value="">${t('— Select Customer —')}</option>`];
-  list.forEach(name => opts.push(`<option value="${name}" ${name===selected?'selected':''}>${name}</option>`));
-  if (selected && !list.includes(selected)) opts.push(`<option value="${selected}" selected>${selected}</option>`);
+  list.forEach(name => opts.push(`<option value="${esc(name)}" ${name===selected?'selected':''}>${name}</option>`));
+  if (selected && !list.includes(selected)) opts.push(`<option value="${esc(selected)}" selected>${selected}</option>`);
   return opts.join('');
 }
 
@@ -3606,19 +3631,19 @@ function renderStep1(r) {
     <div class="card-title" style="margin-bottom:12px">${t('Order Information · Sipariş Bilgileri')}</div>
     <div class="grid-2">
       <div class="field"><label>${t('Customer · Müşteri')}</label><select id="f-customer">${customerOpts(r.customer)}</select></div>
-      <div class="field"><label>${t('Order No · Sipariş No')}</label><input id="f-orderno" value="${r.orderno||''}" placeholder=""></div>
+      <div class="field"><label>${t('Order No · Sipariş No')}</label><input id="f-orderno" value="${esc(r.orderno||'')}" placeholder=""></div>
     </div>
     <div class="grid-2">
       <div class="field"><label>${t('Order Qty · Sipariş Adedi')}</label><input id="f-orderqty" type="number" value="${r.orderqty||''}" placeholder=""></div>
       <div class="field"><label>${t('Shipping Qty · Yükleme Adedi')}</label><input id="f-shipqty" type="number" value="${r.shipqty||''}" placeholder=""></div>
     </div>
-    <div class="field"><label>${t('Supplier · Tedarikçi')}</label><input id="f-supplier" value="${r.supplier||''}" placeholder=""></div>
-    <div class="field"><label>${t('Style No')}</label><input id="f-styleno" value="${r.styleno||''}" placeholder=""></div>
+    <div class="field"><label>${t('Supplier · Tedarikçi')}</label><input id="f-supplier" value="${esc(r.supplier||'')}" placeholder=""></div>
+    <div class="field"><label>${t('Style No')}</label><input id="f-styleno" value="${esc(r.styleno||'')}" placeholder=""></div>
     <div class="grid-2">
-      <div class="field"><label>${t('Description · Malın Tanımı')}</label><input id="f-desc" value="${r.description||''}" placeholder=""></div>
-      <div class="field"><label>${t('Colour · Renk')}</label><input id="f-colour" value="${r.colour||''}" placeholder=""></div>
+      <div class="field"><label>${t('Description · Malın Tanımı')}</label><input id="f-desc" value="${esc(r.description||'')}" placeholder=""></div>
+      <div class="field"><label>${t('Colour · Renk')}</label><input id="f-colour" value="${esc(r.colour||'')}" placeholder=""></div>
     </div>
-    <div class="field"><label>${t('Fabric · Kumaş')}</label><input id="f-fabric" value="${r.fabric||''}" placeholder=""></div>
+    <div class="field"><label>${t('Fabric · Kumaş')}</label><input id="f-fabric" value="${esc(r.fabric||'')}" placeholder=""></div>
     <div class="grid-3">
       <div class="field"><label>${t('Shipping Date · Yükleme Tarihi')}</label><input id="f-shipdate" type="text" value="${r.shipdate||''}" placeholder="" maxlength="10" oninput="formatShipDate(this)"></div>
       <div class="field"><label>${t('Insp. Start · Başlangıç')}</label><input id="f-inspstart" type="datetime-local" value="${r.inspstart||''}"></div>
@@ -3860,13 +3885,21 @@ function changeDefect(code, type, delta) {
 // STEP 4: PHOTOS
 // ══════════════════════════════════════════════════════════════════════
 
+function camOpenFinalPhoto() {
+  camOpen(url => {
+    addPhotoToReport(url, state.photoLabel);
+    renderStep4(state.currentReport);
+    toast(t('📸 Photo saved:') + ' ' + state.photoLabel);
+  }, state.photoLabel);
+}
+
 function renderStep4(r) {
   const photosHTML = (r.photos||[]).map((p,i) => `
     <div class="photo-thumb">
       <img src="${p.url}" alt="${p.label}">
       <button class="pt-edit" onclick="editPhoto(${i})" title="Edit">✏</button>
       <div class="pt-label">
-        <input value="${p.label||''}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
+        <input value="${esc(p.label||'')}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
           oninput="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
       </div>
       <button class="pt-del" onclick="deletePhoto(${i})">✕</button>
@@ -3881,7 +3914,7 @@ function renderStep4(r) {
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:16px">
-      <button class="btn btn-primary" style="flex:1;padding:14px;font-size:15px" onclick="camOpen(url=>{addPhotoToReport(url,state.photoLabel);renderStep4(state.currentReport);toast(t('📸 Photo saved:')+' '+state.photoLabel);},state.photoLabel)">📷 ${t('Open Camera')}</button>
+      <button class="btn btn-primary" style="flex:1;padding:14px;font-size:15px" onclick="camOpenFinalPhoto()">📷 ${t('Open Camera')}</button>
       <label class="btn btn-ghost" style="flex:1;padding:14px;cursor:pointer;text-align:center;font-size:15px">
         📁 ${t('Upload Photos')}
         <input type="file" accept="image/*" multiple style="display:none" onchange="uploadPhoto(this)">
@@ -3984,7 +4017,7 @@ function renderPhotoGrid() {
       <img src="${p.url}" alt="${p.label}">
       <button class="pt-edit" onclick="editPhoto(${i})" title="Edit">✏</button>
       <div class="pt-label">
-        <input value="${p.label||''}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
+        <input value="${esc(p.label||'')}" style="background:transparent;border:none;color:#fff;font-size:10px;width:100%;text-align:center;outline:none;cursor:text"
           oninput="renamePhoto(${i},this.value)" onclick="event.stopPropagation()">
       </div>
       <button class="pt-del" onclick="deletePhoto(${i})">✕</button>
@@ -4007,8 +4040,8 @@ function peopleOpts(key, selected) {
   const defaults = loadPeopleDefaults();
   const effective = selected || defaults[key] || '';
   const opts = [`<option value="">${t('— Select —')}</option>`];
-  list.forEach(name => opts.push(`<option value="${name}" ${name===effective?'selected':''}>${name}</option>`));
-  if (effective && !list.includes(effective)) opts.push(`<option value="${effective}" selected>${effective}</option>`);
+  list.forEach(name => opts.push(`<option value="${esc(name)}" ${name===effective?'selected':''}>${name}</option>`));
+  if (effective && !list.includes(effective)) opts.push(`<option value="${esc(effective)}" selected>${effective}</option>`);
   return opts.join('');
 }
 
@@ -4181,7 +4214,6 @@ function renderStep6(r) {
       <button class="btn btn-primary" onclick="downloadFinalPDF()">${t('📥 Download PDF')}</button>
     </div>
   `);
-  document.getElementById('print-area').innerHTML = reportHTML;
 }
 
 
@@ -4210,51 +4242,6 @@ function _pdfOrderInfoTable(r) {
       <td style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Ship Date · Yükleme',  r.shipdate)}</td>
       <td style="border:1px solid ${PDF.BORDER_LIGHT}">${cell('Checked Qty', r.piecesChecked||r.sampleQty)}</td>
     </tr>
-  </table>`;
-}
-
-/** Renders the AQL summary row for the Final Report PDF. */
-function _pdfAqlSummaryRow(r) {
-  const { maj, min, crit } = defectTotals(r);
-  const pass = r.result === 'pass';
-  const resultColor = pass ? PDF.PASS_GREEN : PDF.FAIL_RED;
-  const resultText  = pass ? 'OKEY · PASSED' : 'RED · FAILED';
-  return `
-  <table style="margin-bottom:3px;border-collapse:collapse;width:100%;table-layout:fixed">
-    <tr>
-      <td style="width:14%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('AQL Level', r.aqlLevel)}</td>
-      <td style="width:14%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Sample Size', r.sampleQty)}</td>
-      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Major Found', maj)}</td>
-      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Major Limit', r.majorLimit)}</td>
-      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Minor Found', min)}</td>
-      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Minor Limit', r.minorLimit)}</td>
-      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT}">${PDF.cell('Critical', crit)}</td>
-      <td style="width:12%;border:1px solid ${PDF.BORDER_LIGHT};background:${resultColor}10">
-        <div class="info-cell">
-          <label style="color:${resultColor}">Result · Sonuç</label>
-          <span style="color:${resultColor};font-weight:700">${resultText}</span>
-        </div>
-      </td>
-    </tr>
-  </table>`;
-}
-
-/** Renders the signature block for the Final Report PDF. */
-function _pdfSignatures(r) {
-  const sigs = [
-    { label: 'QC Name · Kalite Kontrolcü',         name: r.qcName },
-    { label: 'Dept. Manager · Departman Müdürü',   name: r.deptManager },
-    { label: 'QA Manager · Kalite Güvence Müd.',   name: r.qaManager },
-    { label: 'Supplier Rep · Firma Yetkilisi',      name: r.supplierRep },
-  ];
-  const cols = sigs.map((s, i) => `
-    <td style="border:none;padding:6px 12px;${i < sigs.length-1 ? 'border-right:1px solid '+PDF.BORDER_MED+';' : ''}width:25%;vertical-align:top">
-      ${PDF.sig(s.label, s.name)}
-    </td>`).join('');
-  return `
-  <div>${PDF.bar('SIGNATURES · İmzalar')}</div>
-  <table style="border:none;width:100%;table-layout:fixed;border-collapse:collapse">
-    <tr>${cols}</tr>
   </table>`;
 }
 
@@ -4607,9 +4594,6 @@ async function buildPrintHTML() {
 </div>`
   + _buildFinalPhotoAndNotesPages(r)
   + '</body></html>';
-  const brand = (r.customer||'Brand').replace(/[^a-zA-Z0-9]/g,'_');
-  const po = (r.orderno||'PO').replace(/[^a-zA-Z0-9]/g,'_');
-
   return printHTML;
 }
 
