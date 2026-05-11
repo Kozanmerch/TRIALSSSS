@@ -3178,7 +3178,7 @@ function buildInterimReportHTML(ir) {
 <!-- PAGE 2: PHOTOS — always a separate page -->
 <div class="pdf-page">
   <div class="section-bar" style="margin-bottom:8px">FOTOĞRAFLAR · PHOTOS (${photos.length})</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
     ${photoGridHTML}
   </div>
 </div>
@@ -4312,7 +4312,7 @@ function _pdfPhotoPage(photos) {
   return `
   <div class="pdf-page">
     ${PDF.bar(`PHOTOS · Fotoğraflar (${photos.length})`)}
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:4px">
       ${grid}
     </div>
   </div>`;
@@ -4606,7 +4606,7 @@ ${(() => {
 
   const photoGrid = allPhotos.length ? `
 <div class="section-bar" style="margin-top:0">PHOTOS · Fotoğraflar (${allPhotos.length})</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;margin-bottom:10px">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:4px;margin-bottom:10px">
   ${allPhotos.map(p => `
     <div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column">
       <div style="aspect-ratio:4/3;width:100%;overflow:hidden">
