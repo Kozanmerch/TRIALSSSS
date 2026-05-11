@@ -575,18 +575,18 @@ body {
   <button id="action-edit-btn" onclick="actionSheetEdit()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:500;color:var(--text);cursor:pointer;margin-bottom:10px;text-align:left">
     <span style="font-size:20px">✏️</span>
     <div>
-      <div id="action-edit-label" style="font-size:14px;font-weight:600">Edit Report</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px">Open and modify this report</div>
+      <div class="as-main" style="font-size:14px;font-weight:600">Edit Report</div>
+      <div class="as-sub" style="font-size:12px;color:var(--muted);margin-top:2px">Open and modify this report</div>
     </div>
   </button>
   <button id="action-download-btn" onclick="actionSheetDownload()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:500;color:var(--text);cursor:pointer;margin-bottom:10px;text-align:left">
     <span style="font-size:20px">📄</span>
     <div>
-      <div style="font-size:14px;font-weight:600">Download PDF</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px">Export this report as a PDF file</div>
+      <div class="as-main" style="font-size:14px;font-weight:600">Download PDF</div>
+      <div class="as-sub" style="font-size:12px;color:var(--muted);margin-top:2px">Export this report as a PDF file</div>
     </div>
   </button>
-  <button onclick="closeActionSheet()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;margin-top:2px">Cancel</button>
+  <button id="action-cancel-btn" onclick="closeActionSheet()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;margin-top:2px">Cancel</button>
 </div>
 
 <div id="print-area" style="display:none"></div>
@@ -977,6 +977,11 @@ const TR = {
   'No photos yet.':'Henüz fotoğraf yok.',
   'Home':'Ana Sayfa',
   '— Select Customer —':'— Müşteri seçin —',
+  // ── Action sheet ─────────────────────────────────────────────────────
+  'Edit Report':'Raporu Düzenle',
+  'Open and modify this report':'Bu raporu aç ve düzenle',
+  'Download PDF':'PDF İndir',
+  'Export this report as a PDF file':'Bu raporu PDF olarak dışa aktar',
 };
 const t = s => uiLang === 'tr' && TR[s] ? TR[s] : s;
 
@@ -3326,6 +3331,12 @@ function showReportActions(type, id) {
     const r = state.reports.find(r => r.id === id);
     title.textContent = r ? `Final #${r.finalInspectionNo||1} · ${r.customer||''}` : 'Final Report';
   }
+  // Update button labels through translation
+  document.querySelector('#action-edit-btn .as-main').textContent    = t('Edit Report');
+  document.querySelector('#action-edit-btn .as-sub').textContent     = t('Open and modify this report');
+  document.querySelector('#action-download-btn .as-main').textContent = t('Download PDF');
+  document.querySelector('#action-download-btn .as-sub').textContent  = t('Export this report as a PDF file');
+  document.getElementById('action-cancel-btn').textContent            = t('Cancel');
   overlay.style.display = 'block';
   sheet.style.display   = 'block';
   sheet.style.transform = 'translateY(100%)';
