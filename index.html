@@ -567,6 +567,28 @@ body {
   <div class="main" id="main-content"></div>
 </div>
 
+<!-- ══ ACTION SHEET MODAL ══════════════════════════════════════════════ -->
+<div id="action-sheet-overlay" onclick="closeActionSheet()" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px)"></div>
+<div id="action-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:3001;background:var(--bg2);border-top:1px solid var(--border2);border-radius:16px 16px 0 0;padding:20px 20px 32px;max-width:480px;margin:0 auto">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px"></div>
+  <div id="action-sheet-title" style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px;text-align:center"></div>
+  <button id="action-edit-btn" onclick="actionSheetEdit()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:500;color:var(--text);cursor:pointer;margin-bottom:10px;text-align:left">
+    <span style="font-size:20px">✏️</span>
+    <div>
+      <div id="action-edit-label" style="font-size:14px;font-weight:600">Edit Report</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Open and modify this report</div>
+    </div>
+  </button>
+  <button id="action-download-btn" onclick="actionSheetDownload()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:500;color:var(--text);cursor:pointer;margin-bottom:10px;text-align:left">
+    <span style="font-size:20px">📄</span>
+    <div>
+      <div style="font-size:14px;font-weight:600">Download PDF</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Export this report as a PDF file</div>
+    </div>
+  </button>
+  <button onclick="closeActionSheet()" style="width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;margin-top:2px">Cancel</button>
+</div>
+
 <div id="print-area" style="display:none"></div>
 
 <script>
@@ -2560,7 +2582,7 @@ function openOrderHub(customerEnc, ordernoEnc) {
     <div class="card-title" style="margin:18px 0 10px">⚡ Ara Kontrol / In-Line Raporları (${interims.length})</div>
     ${interims.slice().reverse().map(ir => {
       const d = ir.createdAt ? new Date(ir.createdAt).toLocaleDateString() : '—';
-      return `<div class="report-card" onclick="openInterim('${ir.id}')">
+      return `<div class="report-card" onclick="showReportActions('interim','${ir.id}')">
         <div class="rc-left">
           <h3>In-Line #${ir.interimNo||1} &nbsp;·&nbsp; ${d}</h3>
           <p>${ir.modelNo||ir.styleno||'—'} · Size: ${ir.size||'—'} · ${ir.qcName||ir.supervisorName||'—'}</p>
@@ -2580,7 +2602,7 @@ function openOrderHub(customerEnc, ordernoEnc) {
         ? `<span class="badge badge-draft">${t('Draft')}</span>`
         : r.result==='pass' ? `<span class="badge badge-pass">${t('PASSED')}</span>` : `<span class="badge badge-fail">${t('FAILED')}</span>`;
       const date = r.inspstart ? formatDT(r.inspstart) : new Date(r.createdAt).toLocaleDateString();
-      return `<div class="report-card" onclick="openReport('${r.id}')">
+      return `<div class="report-card" onclick="showReportActions('final','${r.id}')">
         <div class="rc-left">
           <h3>Final #${r.finalInspectionNo||1} &nbsp;·&nbsp; ${date}</h3>
           <p>${r.styleno||t('No style')} · ${t('Major')}: ${maj} ${t('Minor')}: ${min}</p>
@@ -3283,6 +3305,75 @@ function openReport(id) {
   state.wizardStep = 1;
   showHomeBtn();
   showWizardStep(1);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ACTION SHEET — Edit or Download from dashboard
+// ══════════════════════════════════════════════════════════════════════
+let _actionSheetType = null; // 'final' | 'interim'
+let _actionSheetId   = null;
+
+function showReportActions(type, id) {
+  _actionSheetType = type;
+  _actionSheetId   = id;
+  const overlay = document.getElementById('action-sheet-overlay');
+  const sheet   = document.getElementById('action-sheet');
+  const title   = document.getElementById('action-sheet-title');
+  if (type === 'interim') {
+    const ir = state.interimReports.find(r => r.id === id);
+    title.textContent = ir ? `In-Line #${ir.interimNo||1}` : 'In-Line Report';
+  } else {
+    const r = state.reports.find(r => r.id === id);
+    title.textContent = r ? `Final #${r.finalInspectionNo||1} · ${r.customer||''}` : 'Final Report';
+  }
+  overlay.style.display = 'block';
+  sheet.style.display   = 'block';
+  sheet.style.transform = 'translateY(100%)';
+  sheet.style.transition = 'transform 0.25s ease';
+  requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+}
+
+function closeActionSheet() {
+  const overlay = document.getElementById('action-sheet-overlay');
+  const sheet   = document.getElementById('action-sheet');
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    sheet.style.display   = 'none';
+    _actionSheetType = null;
+    _actionSheetId   = null;
+  }, 220);
+}
+
+function actionSheetEdit() {
+  const type = _actionSheetType;
+  const id   = _actionSheetId;
+  closeActionSheet();
+  setTimeout(() => {
+    if (type === 'interim') openInterim(id);
+    else openReport(id);
+  }, 230);
+}
+
+async function actionSheetDownload() {
+  const type = _actionSheetType;
+  const id   = _actionSheetId;
+  closeActionSheet();
+  if (type === 'interim') {
+    const ir = state.interimReports.find(r => r.id === id);
+    if (!ir) return;
+    const prev = state.currentInterim;
+    state.currentInterim = ir;
+    await downloadInterimPDF();
+    state.currentInterim = prev;
+  } else {
+    const r = state.reports.find(rep => rep.id === id);
+    if (!r) return;
+    const prev = state.currentReport;
+    state.currentReport = r;
+    await downloadFinalPDF();
+    state.currentReport = prev;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════
