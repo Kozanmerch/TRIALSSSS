@@ -518,11 +518,15 @@ body {
   <video id="cam-video" autoplay playsinline muted></video>
   <canvas id="cam-snap" style="display:none"></canvas>
   <div class="cam-bottom-bar">
-    <label class="cam-btn" style="cursor:pointer" title="Upload">
+    <label class="cam-btn" style="cursor:pointer" title="Upload from gallery">
       📁
       <input type="file" accept="image/*" multiple style="display:none" onchange="camUpload(this)">
     </label>
-    <button class="cam-shutter" onclick="camSnap()" aria-label="Take photo"></button>
+    <!-- Native camera: hands off to the device camera app for full sensor quality -->
+    <label style="display:flex;align-items:center;justify-content:center;cursor:pointer">
+      <div class="cam-shutter" title="Take photo"></div>
+      <input type="file" accept="image/*" capture="environment" style="display:none" onchange="camNativeSnap(this)">
+    </label>
     <div style="width:60px"></div>
   </div>
 </div>
@@ -644,8 +648,6 @@ const CHECKLIST_PEOPLE_KEY = 'aql_checklist_people';
 const PEOPLE_DEFAULTS_KEY  = 'aql_people_defaults';
 const CUSTOMERS_KEY    = 'aql_customers';
 const MAX_STORED       = Infinity;
-const PHOTO_MAX_DIM    = 1200;
-const PHOTO_QUALITY    = 0.65;
 const PRINT_DELAY_MS   = 300;
 const TOAST_DURATION   = 2000;
 
@@ -1045,9 +1047,22 @@ function updateReport(fn) {
 // ══════════════════════════════════════════════════════════════════════
 
 /** Saves reports to localStorage and syncs to Supabase. Oldest reports are
- * pruned when storage is full. Call after every report mutation. */
+ * pruned when storage is full. Call after every report mutation.
+ * Photos are uploaded to the storage bucket first — only URLs are stored
+ * in localStorage and the DB, never raw base64. */
 async function persistReports() {
-  // Sort by date ascending so oldest is first (index 0)
+  // ── Upload any pending base64 photos to bucket first ──────────────
+  // This replaces base64 data URIs with bucket URLs IN STATE before
+  // writing to localStorage, so localStorage never stores raw base64.
+  if (typeof sb !== 'undefined') {
+    for (const r of state.reports) {
+      try { await uploadPendingPhotos(r); } catch(e) {
+        console.warn('[AQL] Photo upload failed, keeping base64 for now:', e.message);
+      }
+    }
+  }
+
+  // ── Write to localStorage (photos are now URLs, not base64) ───────
   const sorted = [...state.reports].sort((a, b) => {
     const da = a.savedAt || a.date || '';
     const db = b.savedAt || b.date || '';
@@ -1073,11 +1088,10 @@ async function persistReports() {
     toast(t('⚠️ Storage critically full. Please export reports as PDF and clear storage.'), 8000);
   }
 
-  // ── Supabase sync ──────────────────────────────────────────────
+  // ── Sync to Supabase DB (photos already uploaded, rows contain only URLs) ──
   if (typeof sb !== 'undefined') {
     for (const r of state.reports) {
       try {
-        await uploadPendingPhotos(r);
         const row = reportToRow(r);
         await sb.rest('POST', 'reports', row, { on_conflict: 'id' });
         console.log('[AQL] ✅ Synced report:', r.id);
@@ -1105,9 +1119,21 @@ function loadInterimReports() {
   try { return JSON.parse(localStorage.getItem(INTERIM_KEY) || '[]'); } catch(_){ return []; }
 }
 /** Persists in-line reports to localStorage + Supabase. Fire-and-forget — callers
- * do not await this. Mirrors persistReports() pattern for in-line data. */
+ * do not await this. Photos are uploaded to bucket first so only URLs are stored. */
 async function saveInterimReports() {
+  // Upload any pending base64 photos to bucket first
+  if (typeof sb !== 'undefined') {
+    for (const ir of state.interimReports) {
+      try { await uploadPendingPhotosInterim(ir); } catch(e) {
+        console.warn('[AQL] Interim photo upload failed, keeping base64 for now:', e.message);
+      }
+    }
+  }
+
+  // Write URLs (not base64) to localStorage
   try { localStorage.setItem(INTERIM_KEY, JSON.stringify(state.interimReports)); } catch(_) {}
+
+  // Sync to Supabase DB
   if (typeof sb !== 'undefined') {
     for (const ir of state.interimReports) {
       try {
@@ -1278,23 +1304,9 @@ async function saveCustomers(list) {
 // IMAGE COMPRESSION  —  single function used by all photo paths
 // ══════════════════════════════════════════════════════════════════════
 
+// No compression — original quality preserved always
 function compressImage(dataUrl) {
-  return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
-      let { width: w, height: h } = img;
-      if (w > PHOTO_MAX_DIM || h > PHOTO_MAX_DIM) {
-        if (w > h) { h = Math.round(h * PHOTO_MAX_DIM / w); w = PHOTO_MAX_DIM; }
-        else        { w = Math.round(w * PHOTO_MAX_DIM / h); h = PHOTO_MAX_DIM; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', PHOTO_QUALITY));
-    };
-    img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl;
-  });
+  return Promise.resolve(dataUrl);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1444,7 +1456,13 @@ async function camStartStream() {
   if (camState.stream) { camState.stream.getTracks().forEach(t => t.stop()); camState.stream = null; }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: camState.facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: {
+        facingMode: camState.facingMode,
+        width:  { ideal: 4096 },
+        height: { ideal: 3072 },
+        frameRate: { ideal: 30 },
+        resizeMode: 'none',         // don't let browser downscale
+      },
       audio: false
     });
     camState.stream = stream;
@@ -1468,16 +1486,58 @@ async function camFlip() {
   await camStartStream();
 }
 
-function camSnap() {
+async function camSnap() {
   const video = document.getElementById('cam-video');
   const canvas = document.getElementById('cam-snap');
   if (!video || !canvas) return;
-  let w = video.videoWidth || 1280, h = video.videoHeight || 720;
+
+  const track = camState.stream && camState.stream.getVideoTracks()[0];
+
+  // ImageCapture grabs a true still from the sensor — much sharper than drawImage(video)
+  if (track && typeof ImageCapture !== 'undefined') {
+    try {
+      const imageCapture = new ImageCapture(track);
+      const capabilities = imageCapture.getPhotoCapabilities ? await imageCapture.getPhotoCapabilities().catch(() => null) : null;
+      const photoSettings = {};
+      if (capabilities?.imageWidth?.max)  photoSettings.imageWidth  = capabilities.imageWidth.max;
+      if (capabilities?.imageHeight?.max) photoSettings.imageHeight = capabilities.imageHeight.max;
+      const blob = await imageCapture.takePhoto(photoSettings);
+      const url = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(blob);
+      });
+      camClose();
+      editorOpen(url);
+      return;
+    } catch(e) {
+      console.warn('[AQL] ImageCapture failed, falling back to canvas:', e);
+    }
+  }
+
+  // Fallback: draw from video element
+  const settings = track ? track.getSettings() : {};
+  const w = settings.width  || video.videoWidth  || 1280;
+  const h = settings.height || video.videoHeight || 720;
   canvas.width = w; canvas.height = h;
-  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
-  const url = canvas.toDataURL('image/jpeg', 0.92);
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(video, 0, 0, w, h);
+  const url = canvas.toDataURL('image/jpeg', 1.0);
   camClose();
   editorOpen(url);
+}
+
+async function camNativeSnap(input) {
+  const file = input.files[0];
+  if (!file) return;
+  camClose();
+  const reader = new FileReader();
+  reader.onload = e => editorOpen(e.target.result);
+  reader.readAsDataURL(file);
+  // Reset input so same file can be re-selected
+  input.value = '';
 }
 
 async function camUpload(input) {
@@ -1499,12 +1559,14 @@ async function camUpload(input) {
  * @param {string} dataURL - Base64 image source
  */
 function editorOpen(dataURL, onDone) {
-  camState.rotation  = 0;
-  camState.flipH     = false;
-  camState.flipV     = false;
+  camState.rotation   = 0;
+  camState.flipH      = false;
+  camState.flipV      = false;
   camState.cropActive = false;
-  camState.cropRect  = null;
-  camState.dragState = null;
+  camState.cropRect   = null;
+  camState.dragState  = null;
+  camState.originalDataURL = dataURL;   // always preserve the untouched original
+  camState._snapJustFired  = false;
   const btn = document.getElementById('crop-toggle-btn');
   if (btn) btn.style.background = '';
 
@@ -1539,6 +1601,8 @@ function editorDraw() {
   canvas.style.height = canvas.height + 'px';
 
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -1658,14 +1722,32 @@ function editorSetupCropDrag() {
 }
 
 /**
- * Applies all edits at full resolution, compresses the result,
- * then calls camState.onSave() with the final data URL.
+ * Applies all edits at full resolution. Encodes based on photo label:
+ * - Barcode or Trim labels → lossless JPEG (quality 1.0), never compress
+ * - Everything else with edits → WebP 80% (~50% smaller, visually fine for garment shots)
+ * - No edits at all → original bytes returned untouched
  */
 async function editorSave() {
-  const srcCanvas = document.getElementById('editor-canvas');
-  if (!srcCanvas || !camState.srcImage) return;
+  if (!camState.srcImage) return;
 
-  // Render at full resolution
+  const noEdits = camState.rotation === 0 && !camState.flipH && !camState.flipV && !camState.cropActive;
+
+  // Helper: should this label be kept lossless?
+  function isProtectedLabel(label) {
+    if (!label) return false;
+    const l = label.toLowerCase();
+    return l.includes('barcode') || l.includes('barkod') || l.includes('trim') || l.includes('aksesuar');
+  }
+  const protected_ = isProtectedLabel(camState.label);
+
+  // No edits — return the original untouched regardless of label.
+  if (noEdits && camState.originalDataURL) {
+    document.getElementById('cam-editor').classList.remove('open');
+    if (typeof camState.onSave === 'function') camState.onSave(camState.originalDataURL);
+    return;
+  }
+
+  // Edits applied — render at full native resolution
   const img = camState.srcImage;
   const rot = ((camState.rotation % 360) + 360) % 360;
   const swapped = rot === 90 || rot === 270;
@@ -1675,34 +1757,41 @@ async function editorSave() {
   const full = document.createElement('canvas');
   full.width = fullW; full.height = fullH;
   const ctx = full.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.save();
   ctx.translate(fullW / 2, fullH / 2);
   ctx.rotate(rot * Math.PI / 180);
   if (camState.flipH) ctx.scale(-1, 1);
   if (camState.flipV) ctx.scale(1, -1);
-  ctx.drawImage(img, -fullW / 2, -fullH / 2, fullW, fullH);
+  ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2, img.naturalWidth, img.naturalHeight);
   ctx.restore();
 
   let result = full;
 
-  // Apply crop if active
   if (camState.cropActive && camState.cropRect) {
     const r = camState.cropRect;
+    const srcCanvas = document.getElementById('editor-canvas');
     const scale = fullW / srcCanvas.width;
     const cx = Math.round(r.x * scale), cy = Math.round(r.y * scale);
     const cw = Math.round(r.w * scale), ch = Math.round(r.h * scale);
     const cropped = document.createElement('canvas');
     cropped.width = cw; cropped.height = ch;
-    cropped.getContext('2d').drawImage(full, cx, cy, cw, ch, 0, 0, cw, ch);
+    const croppedCtx = cropped.getContext('2d');
+    croppedCtx.imageSmoothingEnabled = true;
+    croppedCtx.imageSmoothingQuality = 'high';
+    croppedCtx.drawImage(full, cx, cy, cw, ch, 0, 0, cw, ch);
     result = cropped;
   }
 
   document.getElementById('cam-editor').classList.remove('open');
 
-  const compressed = await compressImage(result.toDataURL('image/jpeg', 0.92));
-  if (typeof camState.onSave === 'function') {
-    camState.onSave(compressed);
-  }
+  // Encode: protected labels → lossless JPEG, everything else → WebP 80%
+  const finalUrl = protected_
+    ? result.toDataURL('image/jpeg', 1.0)
+    : result.toDataURL('image/webp', 0.80);
+
+  if (typeof camState.onSave === 'function') camState.onSave(finalUrl);
 }
 
 function editorDiscard() {
@@ -2972,9 +3061,9 @@ async function addInterimPhotos(input) {
   if (files.length === 1) {
     const reader = new FileReader();
     reader.onload = e => {
-      camState.onSave = async url => {
-        const compressed = await compressImage(url);
-        updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url: compressed, label: '' }); });
+      camState.label  = '';   // label assigned after save in interim grid
+      camState.onSave = url => {
+        updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url, label: '' }); });
         _refreshInterimPhotoGrid();
         toast(t('📸 Photo saved'));
       };
@@ -2983,13 +3072,12 @@ async function addInterimPhotos(input) {
     reader.readAsDataURL(files[0]);
     return;
   }
-  // Multiple files → compress and add directly
+  // Multiple files → add directly, no processing
   for (const file of files) {
     const reader = new FileReader();
     await new Promise(resolve => {
-      reader.onload = async e => {
-        const compressed = await compressImage(e.target.result);
-        updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url: compressed, label: '' }); });
+      reader.onload = e => {
+        updateInterim(r => { if (!r.photos) r.photos = []; r.photos.push({ url: e.target.result, label: '' }); });
         resolve();
       };
       reader.readAsDataURL(file);
@@ -3012,6 +3100,7 @@ function deleteInterimPhoto(idx) {
 function editInterimPhoto(idx) {
   const ir = state.currentInterim;
   if (!ir || !ir.photos || !ir.photos[idx]) return;
+  camState.label  = ir.photos[idx].label || '';
   camState.onSave = url => {
     updateInterim(r => { r.photos[idx] = { ...r.photos[idx], url }; });
     _refreshInterimPhotoGrid();
@@ -3084,10 +3173,10 @@ function buildInterimReportHTML(ir) {
       const header = start === 0
         ? '<div class="section-bar" style="margin-bottom:8px">FOTOĞRAFLAR · PHOTOS (' + photos.length + ')</div>'
         : '';
-      interimPhotoPages += '<div class="pdf-page">' + header +
+      interimPhotoPages += '<div class="pdf-page" style="break-inside:avoid;page-break-inside:avoid">' + header +
         '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">' +
         chunk.map(p =>
-          '<div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column">' +
+          '<div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column;break-inside:avoid;page-break-inside:avoid">' +
             '<div style="width:100%;height:240px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f9f9f9">' +
               '<img src="' + (p.url||p) + '" style="max-width:100%;max-height:240px;width:auto;height:auto;display:block;object-fit:contain">' +
             '</div>' +
@@ -3229,8 +3318,8 @@ ${interimPhotoPages}
 //     for fonts/images to load before capturing.
 // ══════════════════════════════════════════════════════════════════════
 // ── SHARED PDF DOWNLOAD ENGINE ───────────────────────────────────────
-// Renders HTML into a hidden iframe, captures each .pdf-page div
-// as a separate jsPDF page — guarantees no content ever splits.
+// Renders HTML into a hidden iframe. Text/layout pages use html2canvas.
+// Photo pages inject images directly into jsPDF at full quality — no screenshot degradation.
 function _triggerPDFDownload(htmlContent, filename, margin) {
   margin = margin || 5;
   toast('⏳ PDF hazırlanıyor…', 8000);
@@ -3239,73 +3328,133 @@ function _triggerPDFDownload(htmlContent, filename, margin) {
   if (old) old.remove();
   const iframe = document.createElement('iframe');
   iframe.id = '_pdf_dl_iframe';
-  // Wide enough for A4, tall enough to render all pages without scrolling
   iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:5000px;border:none;visibility:hidden;';
   document.body.appendChild(iframe);
 
   iframe.onload = function() {
-    setTimeout(function() {
+    setTimeout(async function() {
       const iDoc = iframe.contentDocument || iframe.contentWindow.document;
       const pages = iDoc.querySelectorAll('.pdf-page');
-
-      if (!pages || pages.length === 0) {
-        // Fallback: capture entire body as single page
-        html2canvas(iDoc.body, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 }).then(function(canvas) {
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-          const pageW = pdf.internal.pageSize.getWidth();
-          const contentW = pageW - margin * 2;
-          const imgH = (canvas.height / 2) * (contentW / (canvas.width / 2));
-          pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, imgH);
-          const url = URL.createObjectURL(pdf.output('blob'));
-          const a = document.createElement('a'); a.href = url; a.download = filename;
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
-          toast('✓ ' + filename + ' indirildi');
-          iframe.remove();
-        });
-        return;
-      }
-
-      // Capture each .pdf-page as a separate PDF page
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
+      const pageW   = pdf.internal.pageSize.getWidth();
+      const pageH   = pdf.internal.pageSize.getHeight();
       const contentW = pageW - margin * 2;
       const contentH = pageH - margin * 2;
 
-      const captureNext = (idx) => {
-        if (idx >= pages.length) {
-          const url = URL.createObjectURL(pdf.output('blob'));
-          const a = document.createElement('a'); a.href = url; a.download = filename;
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
-          toast('✓ ' + filename + ' indirildi');
-          iframe.remove();
-          return;
+      // A page is a "photo page" if it contains the photo section bar or multiple large images
+      function isPhotoPage(pg) {
+        const bar = pg.querySelector('.section-bar');
+        if (bar && (bar.textContent.includes('PHOTO') || bar.textContent.includes('FOTOĞRAF'))) return true;
+        // Also detect by counting large data-URI images (more than 1 means it's a photo grid, not just a logo)
+        const largeImgs = Array.from(pg.querySelectorAll('img')).filter(
+          img => img.src && img.src.length > 5000 && img.naturalWidth > 200
+        );
+        return largeImgs.length > 1;
+      }
+
+      // Inject photos directly into jsPDF — bypasses html2canvas entirely
+      async function renderPhotoPageDirect(pg, isFirst) {
+        if (!isFirst) pdf.addPage();
+
+        // Render any section-bar header text via html2canvas (tiny, no quality loss)
+        const bar = pg.querySelector('.section-bar');
+        const barH = bar ? 7 : 0;
+        if (bar) {
+          const bc = await html2canvas(bar, { scale:2, useCORS:true, logging:false, backgroundColor:'#A6A6A6', width:794, windowWidth:794 });
+          pdf.addImage(bc.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, barH);
         }
-        const pg = pages[idx];
-        html2canvas(pg, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 }).then(function(canvas) {
-          if (idx > 0) pdf.addPage();
-          const imgH = (canvas.height / 2) * (contentW / (canvas.width / 2));
-          // If the page content is taller than one A4, scale it to fit
-          const drawH = Math.min(imgH, contentH);
-          pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, drawH);
-          captureNext(idx + 1);
-        }).catch(function(err) {
-          console.error('PDF page error:', err);
-          captureNext(idx + 1); // skip broken page
+
+        const photos = Array.from(pg.querySelectorAll('img')).filter(
+          img => img.src && img.src.length > 5000 && img.naturalWidth > 200
+        );
+
+        const cols   = 2;
+        const gap    = 3;
+        const cellW  = (contentW - gap) / cols;
+        const cellH  = 86;
+        const startY = margin + barH + (bar ? 2 : 0);
+
+        photos.forEach((img, i) => {
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const x   = margin + col * (cellW + gap);
+          const y   = startY + row * (cellH + gap);
+
+          // Cell border
+          pdf.setDrawColor(200, 200, 200);
+          pdf.setLineWidth(0.2);
+          pdf.rect(x, y, cellW, cellH);
+
+          // Fit image preserving aspect ratio
+          const iw = img.naturalWidth  || 1;
+          const ih = img.naturalHeight || 1;
+          const photoH = cellH - 7; // reserve bottom for label
+          const scale  = Math.min(cellW / iw, photoH / ih);
+          const dw = iw * scale;
+          const dh = ih * scale;
+          const dx = x + (cellW - dw) / 2;
+          const dy = y + (photoH - dh) / 2;
+
+          try {
+            const fmt = img.src.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+            pdf.addImage(img.src, fmt, dx, dy, dw, dh);
+          } catch(e) { console.warn('[AQL] Photo embed failed:', e); }
+
+          // Label text at bottom of cell — find it within the same grid cell as the image
+          const cellContainer = img.closest('div[style*="flex-direction:column"], div[style*="flex-direction: column"]');
+          const labelEl = cellContainer && cellContainer.querySelector('div[style*="background:#f0f0f0"], div[style*="background:#F0F0F0"]');
+          const label   = labelEl ? labelEl.textContent.trim() : '';
+          if (label) {
+            pdf.setFontSize(6.5);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(label, x + cellW / 2, y + cellH - 1.5, { align:'center', maxWidth: cellW - 2 });
+          }
         });
-      };
-      captureNext(0);
-    }, 1000); // wait for fonts and images
+      }
+
+      if (!pages || pages.length === 0) {
+        const canvas = await html2canvas(iDoc.body, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 });
+        const imgH = (canvas.height / 2) * (contentW / (canvas.width / 2));
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, Math.min(imgH, contentH));
+        _finishPDF(pdf, filename, iframe);
+        return;
+      }
+
+      let isFirst = true;
+      for (let idx = 0; idx < pages.length; idx++) {
+        const pg = pages[idx];
+        try {
+          if (isPhotoPage(pg)) {
+            await renderPhotoPageDirect(pg, isFirst);
+          } else {
+            const canvas = await html2canvas(pg, { scale:2, useCORS:true, logging:false, backgroundColor:'#ffffff', width:794, windowWidth:794 });
+            if (!isFirst) pdf.addPage();
+            const imgH = (canvas.height / 2) * (contentW / (canvas.width / 2));
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, Math.min(imgH, contentH));
+          }
+        } catch(err) { console.error('PDF page error:', err); }
+        isFirst = false;
+      }
+      _finishPDF(pdf, filename, iframe);
+
+    }, 1000);
     setTimeout(function() { if (iframe.parentNode) iframe.remove(); }, 30000);
   };
 
   iframe.contentDocument.open();
   iframe.contentDocument.write(htmlContent);
   iframe.contentDocument.close();
+}
+
+function _finishPDF(pdf, filename, iframe) {
+  const url = URL.createObjectURL(pdf.output('blob'));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast('✓ ' + filename + ' indirildi');
+  if (iframe && iframe.parentNode) iframe.remove();
 }
 
 function downloadInterimPDF() {
@@ -3855,12 +4004,11 @@ function saveDefectPhoto(code, input) {
   let pending  = files.length;
   files.forEach(file => {
     const reader = new FileReader();
-    reader.onload = async e => {
-      const compressed = await compressImage(e.target.result);
+    reader.onload = e => {
       updateReport(r => {
         if (!r.defects[code]) r.defects[code] = {maj:0,min:0};
         normDefectPhotos(r.defects[code]);
-        r.defects[code].photos.push(compressed);
+        r.defects[code].photos.push(e.target.result);
       });
       if (--pending === 0) renderStep3(state.currentReport);
     };
@@ -3971,6 +4119,7 @@ function uploadPhoto(input) {
   if (files.length === 1) {
     const reader = new FileReader();
     reader.onload = e => {
+      camState.label  = state.photoLabel || '';
       camState.onSave = url => {
         addPhotoToReport(url, state.photoLabel);
         renderStep4(state.currentReport);
@@ -3981,12 +4130,11 @@ function uploadPhoto(input) {
     reader.readAsDataURL(files[0]);
     return;
   }
-  // Multiple → add directly
+  // Multiple → add directly, no processing
   files.forEach(file => {
     const reader = new FileReader();
-    reader.onload = async e => {
-      const compressed = await compressImage(e.target.result);
-      addPhotoToReport(compressed, state.photoLabel);
+    reader.onload = e => {
+      addPhotoToReport(e.target.result, state.photoLabel);
       renderStep4(state.currentReport);
     };
     reader.onerror = () => toast(t('⚠️ Could not read photo'));
@@ -4015,6 +4163,7 @@ function deletePhoto(idx) {
 function editPhoto(idx) {
   const r = state.currentReport;
   if (!r || !r.photos[idx]) return;
+  camState.label  = r.photos[idx].label || '';
   camState.onSave = url => {
     updateReport(r2 => { r2.photos[idx] = { ...r2.photos[idx], url }; });
     renderStep4(state.currentReport);
@@ -4323,12 +4472,12 @@ function _buildFinalPhotoAndNotesPages(r) {
       var label = p.label
         ? '<div style="font-size:9px;font-weight:700;color:#374151;text-align:center;padding:3px 4px;background:#f0f0f0;border-top:1px solid #ddd;width:100%">' + p.label + '</div>'
         : '';
-      return '<div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column">'
+      return '<div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;background:#f9f9f9;display:flex;flex-direction:column;break-inside:avoid;page-break-inside:avoid">'
         + '<div style="width:100%;height:240px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f9f9f9">'
         + '<img src="' + p.url + '" style="max-width:100%;max-height:240px;width:auto;height:auto;display:block;object-fit:contain">'
         + '</div>' + label + '</div>';
     }).join('');
-    photoPages += '<div class="pdf-page">' + header
+    photoPages += '<div class="pdf-page" style="break-inside:avoid;page-break-inside:avoid">' + header
       + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:4px">'
       + cells + '</div></div>';
   }
@@ -4350,7 +4499,7 @@ function _buildFinalPhotoAndNotesPages(r) {
       var noteHTML = d.note
         ? '<div style="margin-top:4px;font-style:italic;color:#374151">' + d.note + '</div>'
         : '';
-      notesCards += '<div style="border:1px solid #ccc;border-radius:6px;overflow:hidden">'
+      notesCards += '<div style="border:1px solid #ccc;border-radius:6px;overflow:hidden;break-inside:avoid;page-break-inside:avoid">'
         + photoGrid
         + '<div style="padding:6px 8px;font-size:8px">'
         + '<div style="font-weight:700;font-family:monospace;color:#A6A6A6">' + item.code + '</div>'
@@ -4681,20 +4830,8 @@ const sb = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `Storage upload failed: HTTP ${res.status}`);
     }
-    const signed = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/sign/${PHOTO_BUCKET}/${path}`,
-      {
-        method:  'POST',
-        headers: {
-          'apikey':        SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type':  'application/json',
-        },
-        body: JSON.stringify({ expiresIn: 3156000 }),
-      }
-    );
-    const { signedURL } = await signed.json();
-    return `${SUPABASE_URL}/storage/v1${signedURL}`;
+    // Public URL — no expiry, no extra round-trip
+    return `${SUPABASE_URL}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;
   },
 };
 
@@ -4817,7 +4954,22 @@ async function uploadPendingPhotos(report) {
   return changed;
 }
 
-// ── Interim serialisation ─────────────────────────────────────────────
+/** Same as uploadPendingPhotos but for interim reports (flat photos array, no defect photos). */
+async function uploadPendingPhotosInterim(ir) {
+  let changed = false;
+  const photos = (ir.photos || []).slice();
+  for (let i = 0; i < photos.length; i++) {
+    const p = photos[i];
+    if (p && p.url && p.url.startsWith('data:')) {
+      try {
+        photos[i] = { ...p, url: await sb.uploadPhoto(ir.id, p.url) };
+        changed = true;
+      } catch(e) { console.warn('[AQL] Interim photo upload failed:', e.message); }
+    }
+  }
+  if (changed) ir.photos = photos;
+  return changed;
+}
 function interimToRow(ir) {
   return {
     id:          ir.id,
