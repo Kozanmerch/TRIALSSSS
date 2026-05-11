@@ -1007,6 +1007,12 @@ const state = {
   cameraStream: null,
   photoLabel: 'Front View',
   activeDefectTab: 'fabric',
+  // People & customers — cached in memory, written through to localStorage on every save
+  people:          { qc:[], dept:[], qa:[], supplier:[] },
+  interimPeople:   { qc:[], supervisor:[] },
+  checklistPeople: { packingSupv:[], qcSupv:[], warehouseSupv:[], checkedBy:[] },
+  customers:       [],
+  peopleDefaults:  {},
 };
 
 // Every mutation of reports goes through here — storage is automatic
@@ -1167,6 +1173,7 @@ function importReports(input) {
 function loadPeople()     { try { return JSON.parse(localStorage.getItem(PEOPLE_KEY) || 'null') || {qc:[],dept:[],qa:[],supplier:[]}; } catch(_){ return {qc:[],dept:[],qa:[],supplier:[]}; } }
 function loadInterimPeople() { try { return JSON.parse(localStorage.getItem(INTERIM_PEOPLE_KEY) || 'null') || {qc:[],supervisor:[]}; } catch(_){ return {qc:[],supervisor:[]}; } }
 async function saveInterimPeople(p) {
+  state.interimPeople = p;
   try { localStorage.setItem(INTERIM_PEOPLE_KEY, JSON.stringify(p)); } catch(_) {}
   if (typeof sb !== 'undefined') {
     try {
@@ -1181,6 +1188,7 @@ async function saveInterimPeople(p) {
 }
 function loadChecklistPeople() { try { return JSON.parse(localStorage.getItem(CHECKLIST_PEOPLE_KEY) || 'null') || {packingSupv:[],qcSupv:[],warehouseSupv:[],checkedBy:[]}; } catch(_){ return {packingSupv:[],qcSupv:[],warehouseSupv:[],checkedBy:[]}; } }
 async function saveChecklistPeople(p) {
+  state.checklistPeople = p;
   try { localStorage.setItem(CHECKLIST_PEOPLE_KEY, JSON.stringify(p)); } catch(_) {}
   if (typeof sb !== 'undefined') {
     try {
@@ -1205,7 +1213,10 @@ function loadPeopleDefaults() { try { return JSON.parse(localStorage.getItem(PEO
  * @param {string} key  - Role key (e.g. "qc", "dept", "interim-supervisor")
  * @param {string} name - Person name, or empty string to clear
  */
-function savePeopleDefault(key, name) { const d = loadPeopleDefaults(); if (name) d[key] = name; else delete d[key]; try { localStorage.setItem(PEOPLE_DEFAULTS_KEY, JSON.stringify(d)); } catch(_) {} }
+function savePeopleDefault(key, name) {
+  if (name) state.peopleDefaults[key] = name; else delete state.peopleDefaults[key];
+  try { localStorage.setItem(PEOPLE_DEFAULTS_KEY, JSON.stringify(state.peopleDefaults)); } catch(_) {}
+}
 function loadChecklists() { try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '[]'); } catch(_){ return []; } }
 /** Persists checklists to localStorage + Supabase. Fire-and-forget. */
 async function saveChecklists() {
@@ -1219,6 +1230,13 @@ async function saveChecklists() {
   }
 }
 (function initChecklists() { state.checklists = loadChecklists(); })();
+(function initPeopleAndCustomers() {
+  state.people          = loadPeople();
+  state.interimPeople   = loadInterimPeople();
+  state.checklistPeople = loadChecklistPeople();
+  state.customers       = loadCustomers();
+  state.peopleDefaults  = loadPeopleDefaults();
+})();
 // ══════════════════════════════════════════════════════════════════════
 // CUSTOMERS
 // ══════════════════════════════════════════════════════════════════════
@@ -1226,7 +1244,7 @@ async function saveChecklists() {
 function loadCustomers()  { try { return JSON.parse(localStorage.getItem(CUSTOMERS_KEY) || '[]'); } catch(_){ return []; } }
 
 async function savePeople(p) {
-  // Always save to localStorage first — this is the source of truth
+  state.people = p;
   try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(p)); } catch(_) {}
   // Sync to Supabase: delete all then reinsert (wrapped safely)
   if (typeof sb !== 'undefined') {
@@ -1243,7 +1261,7 @@ async function savePeople(p) {
 }
 
 async function saveCustomers(list) {
-  // Always save to localStorage first — this is the source of truth
+  state.customers = list;
   try { localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list)); } catch(_) {}
   // Sync to Supabase: delete all then reinsert (wrapped safely)
   if (typeof sb !== 'undefined') {
@@ -2043,7 +2061,7 @@ async function deleteOrder(customerEnc, ordernoEnc) {
 // ══════════════════════════════════════════════════════════════════════
 
 function startNewOrder() {
-  const allCustomers = loadCustomers();
+  const allCustomers = state.customers;
   state.screen = 'neworder';
   showHomeBtn();
   render(`
@@ -2245,8 +2263,8 @@ function localDateTimeStr() {
 function renderChecklistForm() {
   const cl = state.currentChecklist;
   if (!cl) return;
-  const cp = loadChecklistPeople();
-  const defaults = loadPeopleDefaults();
+  const cp = state.checklistPeople;
+  const defaults = state.peopleDefaults;
   // Build combined name list for "Checked By"
   const checkedByNames = cp.checkedBy || [];
   const nameOptsFor = (selected) =>
@@ -2795,9 +2813,9 @@ function camOpenInterim() {
 function renderInterimForm() {
   const ir = state.currentInterim;
   if (!ir) return;
-  const p = loadPeople();
-  const ip = loadInterimPeople();
-  const defaults = loadPeopleDefaults();
+  const p = state.people;
+  const ip = state.interimPeople;
+  const defaults = state.peopleDefaults;
   // Use default if no value saved yet
   const interimQcList = ip.qc || [];
   const interimSupList = ip.supervisor || [];
@@ -3407,10 +3425,10 @@ async function actionSheetDownload() {
 function showManagePeople() {
   state.screen = 'people';
   showHomeBtn();
-  const p  = loadPeople();
-  const ip = loadInterimPeople();
-  const cp = loadChecklistPeople();
-  const defaults = loadPeopleDefaults();
+  const p  = state.people;
+  const ip = state.interimPeople;
+  const cp = state.checklistPeople;
+  const defaults = state.peopleDefaults;
 
   const defaultSelector = (key, list) => {
     if (!list || !list.length) return '';
@@ -3481,7 +3499,7 @@ function addPerson(key) {
   const input = qs(`#add-${key}`);
   const name  = (input?.value||'').trim();
   if (!name) { toast(t('Please enter a name')); return; }
-  const p = loadPeople();
+  const p = state.people;
   if (!p[key]) p[key] = [];
   if (p[key].includes(name)) { toast(t('Name already exists')); return; }
   p[key].push(name);
@@ -3491,7 +3509,7 @@ function addPerson(key) {
 }
 
 function deletePerson(key, idx) {
-  const p = loadPeople();
+  const p = state.people;
   if (!confirm(`${t('Remove this person?')} "${p[key][idx]}"`)) return;
   p[key].splice(idx, 1);
   savePeople(p);
@@ -3503,7 +3521,7 @@ function addInterimPerson(rawKey) {
   const input = qs(`#add-${rawKey}`);
   const name = (input?.value||'').trim();
   if (!name) { toast(t('Please enter a name')); return; }
-  const ip = loadInterimPeople();
+  const ip = state.interimPeople;
   if (!ip[key]) ip[key] = [];
   if (ip[key].includes(name)) { toast(t('Name already exists')); return; }
   ip[key].push(name);
@@ -3514,7 +3532,7 @@ function addInterimPerson(rawKey) {
 
 function deleteInterimPerson(rawKey, idx) {
   const key = rawKey.replace('interim-', '');
-  const ip = loadInterimPeople();
+  const ip = state.interimPeople;
   if (!confirm(`${t('Remove this person?')} "${ip[key][idx]}"`)) return;
   ip[key].splice(idx, 1);
   saveInterimPeople(ip);
@@ -3527,7 +3545,7 @@ function addChecklistPerson(rawKey) {
   const input = qs(`#add-${rawKey}`);
   const name = (input?.value||'').trim();
   if (!name) { toast(t('Please enter a name')); return; }
-  const cp = loadChecklistPeople();
+  const cp = state.checklistPeople;
   if (!cp[key]) cp[key] = [];
   if (cp[key].includes(name)) { toast(t('Name already exists')); return; }
   cp[key].push(name);
@@ -3538,7 +3556,7 @@ function addChecklistPerson(rawKey) {
 
 function deleteChecklistPerson(rawKey, idx) {
   const key = rawKey.replace('cl-', '');
-  const cp = loadChecklistPeople();
+  const cp = state.checklistPeople;
   if (!confirm(`${t('Remove this person?')} "${cp[key][idx]}"`)) return;
   cp[key].splice(idx, 1);
   saveChecklistPeople(cp);
@@ -3552,7 +3570,7 @@ function deleteChecklistPerson(rawKey, idx) {
 function showManageCustomers() {
   state.screen = 'customers';
   showHomeBtn();
-  const list = loadCustomers();
+  const list = state.customers;
   render(`
     <div class="dash-header"><h2>🏢 ${t('Manage Customers')}</h2><p>${t('Add or remove customers for the dropdown in reports.')}</p></div>
     <div id="customer-list">
@@ -3574,14 +3592,14 @@ function addCustomer() {
   const input = qs('#add-customer');
   const name  = (input?.value||'').trim();
   if (!name) { toast(t('Please enter a customer name')); return; }
-  const list = loadCustomers();
+  const list = state.customers;
   if (list.includes(name)) { toast(t('Customer already exists')); return; }
   list.push(name); saveCustomers(list);
   toast(`${t('✓ Added:')} ${name}`); showManageCustomers();
 }
 
 function deleteCustomer(idx) {
-  const list = loadCustomers();
+  const list = state.customers;
   if (!confirm(`${t('Remove this customer?')} "${list[idx]}"`)) return;
   list.splice(idx, 1); saveCustomers(list); showManageCustomers();
 }
@@ -3615,7 +3633,7 @@ function showWizardStep(step) {
 // ══════════════════════════════════════════════════════════════════════
 
 function customerOpts(selected) {
-  const list = loadCustomers();
+  const list = state.customers;
   const opts = [`<option value="">${t('— Select Customer —')}</option>`];
   list.forEach(name => opts.push(`<option value="${esc(name)}" ${name===selected?'selected':''}>${name}</option>`));
   if (selected && !list.includes(selected)) opts.push(`<option value="${esc(selected)}" selected>${selected}</option>`);
@@ -4036,8 +4054,8 @@ function renderPhotoGrid() {
  * @returns {string} HTML option string
  */
 function peopleOpts(key, selected) {
-  const list = loadPeople()[key] || [];
-  const defaults = loadPeopleDefaults();
+  const list = state.people[key] || [];
+  const defaults = state.peopleDefaults;
   const effective = selected || defaults[key] || '';
   const opts = [`<option value="">${t('— Select —')}</option>`];
   list.forEach(name => opts.push(`<option value="${esc(name)}" ${name===effective?'selected':''}>${name}</option>`));
@@ -4938,6 +4956,7 @@ async function loadPeopleFromSupabase() {
         merged[key] = combined;
       }
       localStorage.setItem(PEOPLE_KEY, JSON.stringify(merged));
+      state.people = merged;
       return merged;
     }
   } catch (e) { console.warn('[AQL] People load failed:', e.message); }
@@ -4956,6 +4975,7 @@ async function loadInterimPeopleFromSupabase() {
         merged[key] = [...new Set([...(fromSupabase[key]||[]), ...(fromLocal[key]||[])])];
       }
       localStorage.setItem(INTERIM_PEOPLE_KEY, JSON.stringify(merged));
+      state.interimPeople = merged;
       return merged;
     }
   } catch (e) { console.warn('[AQL] Interim people load failed:', e.message); }
@@ -4974,6 +4994,7 @@ async function loadChecklistPeopleFromSupabase() {
         merged[key] = [...new Set([...(fromSupabase[key]||[]), ...(fromLocal[key]||[])])];
       }
       localStorage.setItem(CHECKLIST_PEOPLE_KEY, JSON.stringify(merged));
+      state.checklistPeople = merged;
       return merged;
     }
   } catch (e) { console.warn('[AQL] Checklist people load failed:', e.message); }
@@ -4989,6 +5010,7 @@ async function loadCustomersFromSupabase() {
       const fromLocal = loadCustomers();
       const merged = [...new Set([...fromSupabase, ...fromLocal])].sort();
       localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(merged));
+      state.customers = merged;
       return merged;
     }
     // Supabase returned empty — trust localStorage completely
